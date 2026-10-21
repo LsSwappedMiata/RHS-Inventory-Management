@@ -1,0 +1,1353 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Truck Stock</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <img src="reynolds_logo_hires_dc44f00b.png" width="120" height="120" alt="" aria-hidden="true">
+      <button class="iconbtn back" id="backBtn" type="button" hidden aria-label="Back to all trucks">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+      </button>
+      <img class="avatar" id="pageAvatar" alt="" hidden>
+      <svg class="mark" id="pageMark" width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+      </svg>
+      <div>
+        <h1 id="pageTitle">Truck Stock</h1>
+        <p id="pageSub">Parts and supplies across your trucks.</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span class="sync" id="sync" data-mode="loading" role="status"><i></i><b id="syncText" style="font-weight:500">Loading</b></span>
+      <button class="btn" id="editTruckBtn" type="button" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"></path><path d="M13.5 6.5l4 4"></path></svg>Truck settings
+      </button>
+      <button class="btn primary" id="addTruckBtn" type="button" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Add truck
+      </button>
+      <button class="btn" id="dataBtn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v13M7 17l-3-3M7 17l3-3M17 20V7M17 7l-3 3M17 7l3 3"></path></svg>Import / export
+      </button>
+      <button class="btn primary" id="addBtn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Add item
+      </button>
+    </div>
+  </header>
+
+  <div class="stack" id="homeView" hidden></div>
+
+  <div class="stack" id="truckView">
+  <div id="banner"></div>
+  <section class="health" id="health" aria-label="Truck status"></section>
+
+  <div>
+    <div class="tabs" role="tablist" id="tabs">
+      <button class="tab" role="tab" id="tab-stock" data-view="stock" aria-selected="true">Stock</button>
+      <button class="tab" role="tab" id="tab-restock" data-view="restock" aria-selected="false">Restock list <span class="count" id="rsCount" hidden></span></button>
+    </div>
+  </div>
+
+  <div id="stockTools" style="display:flex;flex-direction:column;gap:12px">
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <input id="q" type="search" placeholder="Search parts, sizes, bins" autocomplete="off" aria-label="Search stock">
+      </div>
+      <div class="seg" id="statusSeg" role="group" aria-label="Filter by status">
+        <button type="button" data-status="all" aria-pressed="true">All</button>
+        <button type="button" data-status="low" aria-pressed="false">Low</button>
+        <button type="button" data-status="out" aria-pressed="false">Out</button>
+      </div>
+      <select class="select" id="sort" aria-label="Sort">
+        <option value="category">Group by category</option>
+        <option value="name">Name A to Z</option>
+        <option value="stock">Most urgent first</option>
+        <option value="recent">Recently changed</option>
+      </select>
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="Filter by category"></div>
+  </div>
+
+  <main id="main"></main>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" hidden>
+  <form class="sheet" id="form" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" novalidate>
+    <div class="sheet-h">
+      <h2 id="sheetTitle">Add item</h2>
+      <button class="iconbtn" type="button" id="closeSheet" aria-label="Close">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+    </div>
+    <div class="fields">
+      <div class="f"><label for="f-name">Part name</label>
+        <div class="combo" id="combo">
+          <input id="f-name" role="combobox" aria-expanded="false" aria-controls="partList" aria-autocomplete="list" autocomplete="off" required maxlength="80" placeholder="Pick from the list or type your own">
+          <button class="combo-btn" type="button" id="comboBtn" tabindex="-1" aria-label="Show part list">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+          </button>
+          <ul class="plist" id="partList" role="listbox" aria-label="Common HVAC parts" hidden></ul>
+        </div>
+      </div>
+      <div class="f h"><label for="f-cat">Category</label><select id="f-cat"></select></div>
+      <div class="f h" id="gasWrap"><label for="f-gas">Refrigerant</label>
+        <select id="f-gas"><option value="">None</option></select></div>
+      <div class="f h" id="specWrap"><label for="f-spec">Part number or size</label><input id="f-spec" maxlength="60" placeholder="45/5 µF 440V"></div>
+      <div class="f t"><label for="f-qty">On truck</label><input id="f-qty" type="number" inputmode="numeric" min="0" step="1" value="0"></div>
+      <div class="f t"><label for="f-min">Restock at</label><input id="f-min" type="number" inputmode="numeric" min="0" step="1" value="1"></div>
+      <div class="f t"><label for="f-par">Par level</label><input id="f-par" type="number" inputmode="numeric" min="0" step="1" value="3"></div>
+      <div class="f h"><label for="f-unit">Unit</label><input id="f-unit" list="units" maxlength="12" placeholder="ea"><datalist id="units"><option value="ea"><option value="box"><option value="pack"><option value="roll"><option value="ft"><option value="lb"><option value="cyl"><option value="gal"><option value="can"></datalist></div>
+      <div class="f h"><label for="f-cost">Cost each (USD)</label><input id="f-cost" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="f"><label for="f-loc">Where on the truck</label><input id="f-loc" maxlength="40" placeholder="Driver side bin"></div>
+      <p class="hint f" style="grid-column:span 6">Restock at is the count where the item shows as low. Par is the count you refill to.</p>
+    </div>
+    <div class="sheet-f">
+      <div class="grp" id="delGrp"></div>
+      <div class="grp"><small id="lastChanged"></small>
+        <button class="btn" type="button" id="cancelBtn">Cancel</button>
+        <button class="btn primary" type="submit">Save</button>
+      </div>
+    </div>
+  </form>
+</div>
+<div class="scrim" id="truckScrim" hidden>
+  <form class="sheet" id="truckForm" role="dialog" aria-modal="true" aria-labelledby="tSheetTitle" novalidate>
+    <div class="sheet-h">
+      <h2 id="tSheetTitle">Add truck</h2>
+      <button class="iconbtn" type="button" id="closeTruck" aria-label="Close">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+    </div>
+    <div class="fields">
+      <div class="f"><label id="tPhotoLbl">Photo</label>
+        <div class="photo-row">
+          <span id="tPhotoPrev"></span>
+          <div class="grp">
+            <button class="btn sm" type="button" id="tPhotoBtn" aria-labelledby="tPhotoLbl tPhotoBtn">Choose photo</button>
+            <button class="btn sm" type="button" id="tPhotoClear" hidden>Remove</button>
+          </div>
+        </div>
+        <input type="file" id="tPhotoFile" accept="image/*" hidden>
+      </div>
+      <div class="f"><label for="t-name">Truck name</label><input id="t-name" required maxlength="60" placeholder="Truck 2"></div>
+      <div class="f"><label for="t-note">Tech, plate or van number</label><input id="t-note" maxlength="80" placeholder="Mike, van 14"></div>
+      <div class="f" id="tFromWrap"><label for="t-from">Start with</label><select id="t-from"></select></div>
+      <label class="chk f" id="tResetWrap" hidden><input type="checkbox" id="t-reset" checked><span>Set all counts to 0<small>Keeps the part list, restock levels and par levels. Turn off to copy the counts too.</small></span></label>
+    </div>
+    <div class="sheet-f">
+      <div class="grp" id="tDelGrp"></div>
+      <div class="grp">
+        <button class="btn" type="button" id="cancelTruck">Cancel</button>
+        <button class="btn primary" type="submit">Save</button>
+      </div>
+    </div>
+  </form>
+</div>
+<div class="scrim" id="dataScrim" hidden>
+  <div class="sheet" id="dataSheet" role="dialog" aria-modal="true" aria-labelledby="dataTitle">
+    <div class="sheet-h">
+      <h2 id="dataTitle">Import / export</h2>
+      <button class="iconbtn" type="button" id="closeData" aria-label="Close">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+    </div>
+    <div class="dbody" id="dataBody"></div>
+    <input type="file" id="csvFile" accept=".csv,text/csv,text/plain" hidden>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var CATS = ['Refrigerant', 'Electrical', 'Motors', 'Filters & Belts', 'Copper & Fittings', 'Controls', 'Consumables'];
+  // Standard cylinder colors for common refrigerants
+  var GAS = { 'R-410A': '#E7A3B8', 'R-22': '#9ED08B', 'R-134a': '#85C5E8', 'R-404A': '#EC9A4B', 'R-407C': '#B58A63', 'R-454B': '#C9D2DA' };
+  var KEY = 'truckstock:v1';
+  var KEY_T = 'truckstock:trucks:v1';
+  var DEFAULT_TRUCK = 'truck-1';
+
+  // Pick-list of common parts: name, category, unit, refrigerant, size examples
+  var PARTS = [
+    ['R-410A refrigerant', 'Refrigerant', 'cyl', 'R-410A', '25 lb cylinder'],
+    ['R-454B refrigerant', 'Refrigerant', 'cyl', 'R-454B', '25 lb cylinder'],
+    ['R-22 reclaimed', 'Refrigerant', 'cyl', 'R-22', '30 lb cylinder'],
+    ['R-134a refrigerant', 'Refrigerant', 'cyl', 'R-134a', '30 lb cylinder'],
+    ['R-404A refrigerant', 'Refrigerant', 'cyl', 'R-404A', '24 lb cylinder'],
+    ['R-407C refrigerant', 'Refrigerant', 'cyl', 'R-407C', '25 lb cylinder'],
+    ['Nitrogen cylinder', 'Refrigerant', 'cyl', '', '20 cu ft'],
+    ['Dual run capacitor', 'Electrical', 'ea', '', '45/5 µF 440V'],
+    ['Single run capacitor', 'Electrical', 'ea', '', '10 µF 370V'],
+    ['Start capacitor', 'Electrical', 'ea', '', '189-227 µF 330V'],
+    ['Contactor, 1 pole', 'Electrical', 'ea', '', '40A 24V coil'],
+    ['Contactor, 2 pole', 'Electrical', 'ea', '', '30A 24V coil'],
+    ['Contactor, 3 pole', 'Electrical', 'ea', '', '40A 24V coil'],
+    ['Hard start kit', 'Electrical', 'ea', '', '5-2-1 style'],
+    ['Control transformer', 'Electrical', 'ea', '', '40VA 120/240 to 24V'],
+    ['Defrost control board', 'Electrical', 'ea', '', 'Universal'],
+    ['Furnace control board', 'Electrical', 'ea', '', 'Universal integrated'],
+    ['Fan relay', 'Electrical', 'ea', '', 'SPDT 24V'],
+    ['Time delay relay', 'Electrical', 'ea', '', '24V'],
+    ['Fuse, cartridge', 'Electrical', 'ea', '', '30A 250V'],
+    ['Disconnect pullout block', 'Electrical', 'ea', '', '60A'],
+    ['Wire nuts', 'Electrical', 'box', '', 'Assorted'],
+    ['Condenser fan motor', 'Motors', 'ea', '', '1/4 HP 825 RPM 208-230V'],
+    ['Blower motor, PSC', 'Motors', 'ea', '', '1/3 HP 3-speed 115V'],
+    ['ECM blower motor', 'Motors', 'ea', '', '1/2 HP programmable'],
+    ['Inducer motor', 'Motors', 'ea', '', '115V'],
+    ['Draft inducer assembly', 'Motors', 'ea', '', 'Universal'],
+    ['Blower wheel', 'Motors', 'ea', '', '10x8 CW'],
+    ['Fan blade', 'Motors', 'ea', '', '24 in 3-blade'],
+    ['Motor mount', 'Motors', 'ea', '', '48 frame'],
+    ['Pleated filter MERV 8', 'Filters & Belts', 'ea', '', '16x25x1'],
+    ['Pleated filter MERV 11', 'Filters & Belts', 'ea', '', '20x25x4'],
+    ['Filter drier', 'Filters & Belts', 'ea', '', '3/8 in liquid line'],
+    ['Suction line drier', 'Filters & Belts', 'ea', '', '3/4 in'],
+    ['V-belt', 'Filters & Belts', 'ea', '', 'A42'],
+    ['Copper line set', 'Copper & Fittings', 'ea', '', '3/8 x 3/4 in, 25 ft'],
+    ['Copper tubing', 'Copper & Fittings', 'ft', '', '3/8 in, 50 ft coil'],
+    ['Silver brazing rods', 'Copper & Fittings', 'lb', '', '15% silver, 1 lb'],
+    ['Brass flare nut', 'Copper & Fittings', 'pack', '', '3/8 in, 10 pack'],
+    ['Schrader valve cores', 'Copper & Fittings', 'pack', '', '10 pack'],
+    ['Service valve cap', 'Copper & Fittings', 'pack', '', '1/4 in flare'],
+    ['Copper coupling', 'Copper & Fittings', 'ea', '', '7/8 in'],
+    ['Copper 90 elbow', 'Copper & Fittings', 'ea', '', '3/4 in'],
+    ['PVC condensate fittings', 'Copper & Fittings', 'pack', '', '3/4 in assorted'],
+    ['Programmable thermostat', 'Controls', 'ea', '', '24V, 2H/1C'],
+    ['Non-programmable thermostat', 'Controls', 'ea', '', '24V, 1H/1C'],
+    ['Condensate float switch', 'Controls', 'ea', '', 'Overflow, 24V'],
+    ['Thermostat wire', 'Controls', 'roll', '', '18/5, 50 ft'],
+    ['Pressure switch', 'Controls', 'ea', '', 'Furnace, 0.5 in WC'],
+    ['Limit switch', 'Controls', 'ea', '', 'L170-40'],
+    ['Hot surface igniter', 'Controls', 'ea', '', 'Universal'],
+    ['Flame sensor', 'Controls', 'ea', '', 'Universal'],
+    ['Thermistor', 'Controls', 'ea', '', '10K'],
+    ['Thermal expansion valve', 'Controls', 'ea', '', '3 ton R-410A'],
+    ['Coil cleaner', 'Consumables', 'gal', '', '1 gal concentrate'],
+    ['Foil tape', 'Consumables', 'roll', '', '2.5 in x 60 yd'],
+    ['Mastic sealant', 'Consumables', 'gal', '', '1 gal'],
+    ['Condensate pan tablets', 'Consumables', 'pack', '', '10 pack'],
+    ['Leak sealant', 'Consumables', 'can', '', '4 oz'],
+    ['PVC primer and cement', 'Consumables', 'can', '', '8 oz'],
+    ['Zip ties', 'Consumables', 'pack', '', '100 pack'],
+    ['Electrical tape', 'Consumables', 'roll', '', '3/4 in'],
+    ['Duct strap', 'Consumables', 'roll', '', '100 ft']
+  ];
+
+  // name, category, part/size, qty, restock-at, par, unit, location, cost, refrigerant
+  var STARTER = [
+    ['R-410A refrigerant', 'Refrigerant', '25 lb cylinder', 2, 1, 3, 'cyl', 'Rear shelf', 285, 'R-410A'],
+    ['R-454B refrigerant', 'Refrigerant', '25 lb cylinder', 1, 1, 2, 'cyl', 'Rear shelf', 310, 'R-454B'],
+    ['R-22 reclaimed', 'Refrigerant', '30 lb cylinder', 0, 1, 2, 'cyl', 'Rear shelf', 420, 'R-22'],
+    ['R-134a refrigerant', 'Refrigerant', '30 lb cylinder', 1, 0, 1, 'cyl', 'Rear shelf', 160, 'R-134a'],
+    ['Dual run capacitor', 'Electrical', '45/5 µF 440V', 4, 2, 6, 'ea', 'Drawer A1', 14, ''],
+    ['Dual run capacitor', 'Electrical', '35/5 µF 440V', 1, 2, 6, 'ea', 'Drawer A1', 13, ''],
+    ['Dual run capacitor', 'Electrical', '30/5 µF 440V', 3, 2, 5, 'ea', 'Drawer A1', 12, ''],
+    ['Contactor, 2 pole', 'Electrical', '30A 24V coil', 3, 2, 5, 'ea', 'Drawer A2', 19, ''],
+    ['Hard start kit', 'Electrical', '5-2-1 style', 2, 1, 3, 'ea', 'Drawer A2', 28, ''],
+    ['Control transformer', 'Electrical', '40VA 120/240 to 24V', 2, 1, 3, 'ea', 'Drawer A2', 22, ''],
+    ['Condenser fan motor', 'Motors', '1/4 HP 825 RPM 208-230V', 1, 1, 2, 'ea', 'Passenger bin', 135, ''],
+    ['Blower motor, PSC', 'Motors', '1/3 HP 3-speed 115V', 1, 1, 2, 'ea', 'Passenger bin', 168, ''],
+    ['Pleated filter MERV 8', 'Filters & Belts', '16x25x1', 18, 8, 24, 'ea', 'Driver bin 1', 4.5, ''],
+    ['Pleated filter MERV 8', 'Filters & Belts', '20x25x1', 14, 8, 24, 'ea', 'Driver bin 1', 5, ''],
+    ['Pleated filter MERV 8', 'Filters & Belts', '16x20x1', 6, 6, 18, 'ea', 'Driver bin 1', 4, ''],
+    ['V-belt', 'Filters & Belts', 'A42', 2, 1, 3, 'ea', 'Driver bin 2', 11, ''],
+    ['Copper line set', 'Copper & Fittings', '3/8 x 3/4 in, 25 ft', 1, 1, 2, 'ea', 'Roof rack', 118, ''],
+    ['Silver brazing rods', 'Copper & Fittings', '15% silver, 1 lb', 3, 1, 4, 'lb', 'Driver bin 2', 98, ''],
+    ['Brass flare nut', 'Copper & Fittings', '3/8 in, 10 pack', 5, 2, 8, 'pack', 'Drawer B1', 12, ''],
+    ['Schrader valve cores', 'Copper & Fittings', '10 pack', 6, 2, 8, 'pack', 'Drawer B1', 7, ''],
+    ['Programmable thermostat', 'Controls', '24V, 2H/1C', 2, 1, 3, 'ea', 'Passenger bin', 46, ''],
+    ['Condensate float switch', 'Controls', 'Overflow, 24V', 2, 2, 4, 'ea', 'Drawer B2', 17, ''],
+    ['Thermostat wire', 'Controls', '18/5, 50 ft', 1, 1, 2, 'roll', 'Drawer B2', 38, ''],
+    ['Coil cleaner', 'Consumables', '1 gal concentrate', 2, 1, 3, 'gal', 'Driver bin 2', 24, ''],
+    ['Foil tape', 'Consumables', '2.5 in x 60 yd', 6, 2, 8, 'roll', 'Drawer B1', 9, '']
+  ];
+
+  var state = {
+    items: new Map(), loaded: false, trucks: new Map(), trucksLoaded: false, truckId: null, tEdit: null, tDelete: false,
+    tPhoto: '', mode: 'loading', saving: false,
+    view: 'stock', q: '', status: 'all', cat: 'all', sort: 'category',
+    confirmClear: false, editingId: null, confirmDelete: false, copyText: ''
+  };
+  var backend = null;
+  var pending = new Map();
+  var toastTimer = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function money(n) { return '$' + Math.round(n).toLocaleString('en-US'); }
+  function money2(n) { return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
+  function ago(ts) {
+    if (!ts) return '';
+    var s = Math.max(0, (Date.now() - ts) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.floor(s / 60) + ' min ago';
+    if (s < 86400) return Math.floor(s / 3600) + ' h ago';
+    return Math.floor(s / 86400) + ' d ago';
+  }
+  function num(v, d) { var n = Number(v); return isFinite(n) ? n : (d || 0); }
+
+  function norm(id, d) {
+    return {
+      id: id, name: String(d.name || 'Untitled'), cat: String(d.cat || 'Consumables'), spec: String(d.spec || ''),
+      qty: Math.max(0, num(d.qty)), min: Math.max(0, num(d.min)), par: Math.max(0, num(d.par)),
+      unit: String(d.unit || ''), loc: String(d.loc || ''), cost: Math.max(0, num(d.cost)),
+      gas: String(d.gas || ''), sample: !!d.sample, updatedAt: num(d.updatedAt), truck: String(d.truck || DEFAULT_TRUCK)
+    };
+  }
+  function normTruck(id, d) {
+    return { id: id, name: String(d.name || 'Truck'), note: String(d.note || ''), photo: String(d.photo || ''), createdAt: num(d.createdAt) };
+  }
+  function qtyOf(it) { return pending.has(it.id) ? pending.get(it.id).value : it.qty; }
+  function statusOf(it) { var q = qtyOf(it); if (q <= 0) return 'out'; if (q <= it.min) return 'low'; return 'ok'; }
+  function everyItem() { return Array.from(state.items.values()); }
+  function allItems() { return everyItem().filter(function (it) { return it.truck === state.truckId; }); }
+  function truckList() {
+    var m = new Map(state.trucks);
+    everyItem().forEach(function (it) {
+      if (!m.has(it.truck)) m.set(it.truck, { id: it.truck, name: it.truck === DEFAULT_TRUCK ? 'My truck' : 'Truck', note: '', createdAt: 0 });
+    });
+    return Array.from(m.values()).sort(function (a, b) { return a.createdAt - b.createdAt || a.name.localeCompare(b.name); });
+  }
+  function getTruck(id) { return truckList().filter(function (t) { return t.id === id; })[0] || null; }
+  function needsRestock(it) { return qtyOf(it) <= it.min && it.par > qtyOf(it); }
+  function cats() {
+    var extra = [];
+    allItems().forEach(function (it) { if (CATS.indexOf(it.cat) < 0 && extra.indexOf(it.cat) < 0) extra.push(it.cat); });
+    return CATS.concat(extra);
+  }
+
+  /* ---------- storage backends ---------- */
+  function makeDbBackend(col, tcol) {
+    var chain = {};
+    function q(id, fn) {
+      chain[id] = (chain[id] || Promise.resolve()).catch(function () {}).then(fn);
+      return chain[id];
+    }
+    return {
+      set: function (id, data) { return q(id, function () { return col.doc(id).set(data); }); },
+      setQty: function (id, qty) { return q(id, function () { return col.doc(id).update({ qty: qty, updatedAt: Date.now() }); }); },
+      remove: function (id) { return q(id, function () { return col.doc(id).delete(); }); },
+      setTruck: function (id, data) { return q('t:' + id, function () { return tcol.doc(id).set(data); }); },
+      removeTruck: function (id) { return q('t:' + id, function () { return tcol.doc(id).delete(); }); }
+    };
+  }
+  function makeLocalBackend() {
+    function persist() {
+      try { localStorage.setItem(KEY, JSON.stringify(everyItem())); localStorage.setItem(KEY_T, JSON.stringify(Array.from(state.trucks.values()))); } catch (e) {}
+    }
+    return {
+      set: function (id, data) { state.items.set(id, norm(id, data)); persist(); render(); return Promise.resolve(); },
+      setQty: function (id, qty) {
+        var it = state.items.get(id);
+        if (it) { it.qty = qty; it.updatedAt = Date.now(); persist(); render(); }
+        return Promise.resolve();
+      },
+      remove: function (id) { state.items.delete(id); persist(); render(); return Promise.resolve(); },
+      setTruck: function (id, data) { state.trucks.set(id, normTruck(id, data)); persist(); render(); return Promise.resolve(); },
+      removeTruck: function (id) { state.trucks.delete(id); persist(); render(); return Promise.resolve(); }
+    };
+  }
+
+  async function boot() {
+    render();
+    var db = null;
+    try { db = (window.claude && window.claude.use) ? await window.claude.use('db') : null; } catch (e) { db = null; }
+    if (db) {
+      var col = db.collection('items');
+      var tcol = db.collection('trucks');
+      backend = makeDbBackend(col, tcol);
+      state.mode = 'synced';
+      col.onSnapshot(function (snap) {
+        var m = new Map();
+        snap.docs.forEach(function (d) { m.set(d.id, norm(d.id, d.data() || {})); });
+        state.items = m; state.loaded = true;
+        state.saving = !!(snap.metadata && snap.metadata.hasPendingWrites);
+        state.mode = 'synced';
+        render();
+      }, function () { state.mode = 'offline'; state.loaded = true; render(); });
+      tcol.onSnapshot(function (snap) {
+        var tm = new Map();
+        snap.docs.forEach(function (d) { tm.set(d.id, normTruck(d.id, d.data() || {})); });
+        state.trucks = tm; state.trucksLoaded = true; render();
+      }, function () { state.trucksLoaded = true; render(); });
+    } else {
+      backend = makeLocalBackend();
+      state.mode = 'local';
+      try {
+        var raw = JSON.parse(localStorage.getItem(KEY) || '[]');
+        raw.forEach(function (d) { state.items.set(d.id, norm(d.id, d)); });
+      } catch (e) {}
+      try {
+        JSON.parse(localStorage.getItem(KEY_T) || '[]').forEach(function (d) { state.trucks.set(d.id, normTruck(d.id, d)); });
+      } catch (e) {}
+      state.loaded = true; state.trucksLoaded = true;
+      render();
+    }
+  }
+
+  /* ---------- actions ---------- */
+  function slug(s) { return (s || 'item').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'item'; }
+  function newId(name) { return slug(name) + '-' + Math.random().toString(36).slice(2, 7); }
+  function toast(msg) {
+    var t = $('toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 2600);
+  }
+  function failed() { toast('Could not save that change. Check your connection and try again.'); }
+
+  function setQty(id, n) {
+    var it = state.items.get(id); if (!it || !backend) return;
+    n = Math.max(0, Math.min(9999, Math.round(num(n))));
+    var prev = pending.get(id);
+    if (prev) clearTimeout(prev.timer);
+    var p = { value: n, timer: null };
+    p.timer = setTimeout(function () { commitQty(id, p); }, 450);
+    pending.set(id, p);
+    render();
+  }
+  function commitQty(id, p) {
+    if (pending.get(id) !== p) return;
+    backend.setQty(id, p.value).then(function () {
+      if (pending.get(id) === p) pending.delete(id);
+      render();
+    }, function () {
+      if (pending.get(id) === p) pending.delete(id);
+      failed(); render();
+    });
+  }
+
+  async function loadStarter() {
+    if (!backend) return;
+    toast('Adding starter stock');
+    try {
+      for (var i = 0; i < STARTER.length; i++) {
+        var s = STARTER[i];
+        await backend.set(newId(s[0]), {
+          name: s[0], cat: s[1], spec: s[2], qty: s[3], min: s[4], par: s[5], unit: s[6],
+          loc: s[7], cost: s[8], gas: s[9], sample: true, updatedAt: Date.now(), truck: state.truckId
+        });
+      }
+      toast('Starter stock added. Update the counts to match your truck.');
+    } catch (e) { failed(); }
+  }
+  async function clearSamples() {
+    var ids = allItems().filter(function (i) { return i.sample; }).map(function (i) { return i.id; });
+    state.confirmClear = false;
+    try { for (var i = 0; i < ids.length; i++) await backend.remove(ids[i]); toast('Sample items removed'); }
+    catch (e) { failed(); }
+    render();
+  }
+
+  /* ---------- part picker ---------- */
+  var combo = { open: false, idx: -1, opts: [] };
+
+  function partPool() {
+    var seen = {}, out = [];
+    PARTS.forEach(function (p) {
+      seen[p[0].toLowerCase()] = 1;
+      out.push({ name: p[0], cat: p[1], unit: p[2], gas: p[3], hint: p[4] });
+    });
+    everyItem().forEach(function (it) {
+      var k = it.name.toLowerCase();
+      if (seen[k]) return;
+      seen[k] = 1;
+      out.push({ name: it.name, cat: it.cat, unit: it.unit, gas: it.gas, hint: it.spec });
+    });
+    return out;
+  }
+  function renderCombo() {
+    var input = $('f-name'), list = $('partList');
+    var q = input.value.trim().toLowerCase();
+    var order = cats();
+    var pool = partPool().filter(function (p) { return !q || p.name.toLowerCase().indexOf(q) >= 0; });
+    pool.sort(function (a, b) { return order.indexOf(a.cat) - order.indexOf(b.cat); });
+    combo.opts = [];
+    var html = '', last = null;
+    pool.forEach(function (p) {
+      if (p.cat !== last) { html += '<li class="pgroup" role="presentation">' + esc(p.cat) + '</li>'; last = p.cat; }
+      html += '<li class="popt" role="option" id="opt-' + combo.opts.length + '" data-i="' + combo.opts.length + '"><span>' + esc(p.name) + '</span>' + (p.hint ? '<small>' + esc(p.hint) + '</small>' : '') + '</li>';
+      combo.opts.push(p);
+    });
+    var exact = pool.some(function (p) { return p.name.toLowerCase() === q; });
+    if (q && !exact) {
+      html += '<li class="popt pnew" role="option" id="opt-' + combo.opts.length + '" data-i="' + combo.opts.length + '"><span>Use “' + esc(input.value.trim()) + '” as a new part</span></li>';
+      combo.opts.push({ name: input.value.trim(), custom: true });
+    }
+    if (!combo.opts.length) html = '<li class="pgroup" role="presentation">No matches</li>';
+    list.innerHTML = html;
+    combo.idx = -1;
+    input.removeAttribute('aria-activedescendant');
+  }
+  function openCombo() {
+    renderCombo();
+    combo.open = true;
+    $('partList').hidden = false;
+    $('f-name').setAttribute('aria-expanded', 'true');
+  }
+  function closeCombo() {
+    combo.open = false;
+    $('partList').hidden = true;
+    $('f-name').setAttribute('aria-expanded', 'false');
+  }
+  function highlight(i, noScroll) {
+    var nodes = $('partList').querySelectorAll('.popt');
+    if (!nodes.length) return;
+    combo.idx = (i + nodes.length) % nodes.length;
+    Array.prototype.forEach.call(nodes, function (n, k) { n.classList.toggle('on', k === combo.idx); });
+    var cur = nodes[combo.idx];
+    $('f-name').setAttribute('aria-activedescendant', cur.id);
+    if (!noScroll) cur.scrollIntoView({ block: 'nearest' });
+  }
+  function pickPart(o) {
+    $('f-name').value = o.name;
+    if (!o.custom && !state.editingId) {
+      if (o.cat) { $('f-cat').value = o.cat; toggleGas(); }
+      $('f-gas').value = o.gas || '';
+      if (o.unit) $('f-unit').value = o.unit;
+      if (o.hint) $('f-spec').placeholder = o.hint;
+    }
+    closeCombo();
+    $('f-spec').focus();
+  }
+
+  /* ---------- sheet ---------- */
+  function fillCatSelect(sel) {
+    $('f-cat').innerHTML = cats().map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
+    $('f-gas').innerHTML = '<option value="">None</option>' + Object.keys(GAS).map(function (g) { return '<option>' + esc(g) + '</option>'; }).join('');
+    $('f-cat').value = sel;
+  }
+  function toggleGas() { $('gasWrap').hidden = $('f-cat').value !== 'Refrigerant'; }
+  function openSheet(id) {
+    state.editingId = id || null; state.confirmDelete = false;
+    var it = id ? state.items.get(id) : null;
+    fillCatSelect(it ? it.cat : (state.cat !== 'all' ? state.cat : CATS[0]));
+    $('sheetTitle').textContent = it ? 'Edit item' : 'Add item';
+    $('f-name').value = it ? it.name : '';
+    $('f-spec').value = it ? it.spec : '';
+    $('f-gas').value = it ? it.gas : '';
+    $('f-qty').value = it ? qtyOf(it) : 0;
+    $('f-min').value = it ? it.min : 1;
+    $('f-par').value = it ? it.par : 3;
+    $('f-unit').value = it ? it.unit : 'ea';
+    $('f-cost').value = it && it.cost ? it.cost : '';
+    $('f-loc').value = it ? it.loc : '';
+    $('lastChanged').textContent = it && it.updatedAt ? 'Changed ' + ago(it.updatedAt) : '';
+    $('f-spec').placeholder = 'Size, rating or part number';
+    renderDelete(); toggleGas(); closeCombo();
+    $('scrim').hidden = false;
+    setTimeout(function () { $('f-name').focus(); if (!it) openCombo(); }, 30);
+  }
+  function closeSheet() { closeCombo(); $('scrim').hidden = true; state.editingId = null; }
+  function renderDelete() {
+    var g = $('delGrp');
+    if (!state.editingId) { g.innerHTML = ''; return; }
+    g.innerHTML = state.confirmDelete
+      ? '<button class="btn sm danger" type="button" data-sheet="delete-yes">Delete for good</button><button class="btn sm" type="button" data-sheet="delete-no">Keep</button>'
+      : '<button class="btn sm danger" type="button" data-sheet="delete">Delete item</button>';
+  }
+  async function saveForm(e) {
+    e.preventDefault();
+    var name = $('f-name').value.trim();
+    if (!name) { $('f-name').focus(); toast('Give the item a name'); return; }
+    var min = Math.max(0, Math.round(num($('f-min').value)));
+    var par = Math.max(min, Math.round(num($('f-par').value)));
+    var cat = $('f-cat').value;
+    var data = {
+      name: name, cat: cat, spec: $('f-spec').value.trim(),
+      gas: cat === 'Refrigerant' ? $('f-gas').value : '',
+      qty: Math.max(0, Math.round(num($('f-qty').value))), min: min, par: par,
+      unit: $('f-unit').value.trim(), loc: $('f-loc').value.trim(),
+      cost: Math.max(0, num($('f-cost').value)), sample: false, updatedAt: Date.now(), truck: state.truckId
+    };
+    var id = state.editingId || newId(name);
+    var pend = pending.get(id); if (pend) { clearTimeout(pend.timer); pending.delete(id); }
+    closeSheet();
+    try { await backend.set(id, data); toast('Saved'); } catch (err) { failed(); }
+  }
+
+  /* ---------- derived ---------- */
+  function visibleItems() {
+    var q = state.q.trim().toLowerCase();
+    var list = allItems().filter(function (it) {
+      if (state.cat !== 'all' && it.cat !== state.cat) return false;
+      if (state.status !== 'all' && statusOf(it) !== state.status) return false;
+      if (state.status === 'low' && statusOf(it) !== 'low') return false;
+      if (q) {
+        var hay = (it.name + ' ' + it.spec + ' ' + it.loc + ' ' + it.gas + ' ' + it.cat).toLowerCase();
+        return q.split(/\s+/).every(function (w) { return hay.indexOf(w) >= 0; });
+      }
+      return true;
+    });
+    var byName = function (a, b) { return a.name.localeCompare(b.name, undefined, { numeric: true }) || a.spec.localeCompare(b.spec, undefined, { numeric: true }); };
+    var rank = { out: 0, low: 1, ok: 2 };
+    if (state.sort === 'name' || state.sort === 'category') list.sort(byName);
+    else if (state.sort === 'recent') list.sort(function (a, b) { return b.updatedAt - a.updatedAt; });
+    else list.sort(function (a, b) {
+      var ra = rank[statusOf(a)], rb = rank[statusOf(b)];
+      if (ra !== rb) return ra - rb;
+      return (qtyOf(a) / Math.max(a.par, 1)) - (qtyOf(b) / Math.max(b.par, 1)) || byName(a, b);
+    });
+    return list;
+  }
+
+  /* ---------- rendering ---------- */
+  var ICON = {
+    minus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg>',
+    plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>',
+    edit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"></path><path d="M13.5 6.5l4 4"></path></svg>',
+    copy: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V6a2 2 0 0 1 2-2h8"></path></svg>'
+  };
+  var STATUS_LABEL = { ok: 'In stock', low: 'Low', out: 'Out' };
+
+  function renderSync() {
+    var s = $('sync'); s.setAttribute('data-mode', state.mode);
+    var t = { loading: 'Loading', synced: state.saving ? 'Saving' : 'Synced', local: 'This device only', offline: 'Offline' }[state.mode];
+    $('syncText').textContent = t;
+    s.title = state.mode === 'local' ? 'Sign in to Claude to keep this inventory across devices.' : '';
+  }
+
+  function renderBanner() {
+    var b = $('banner');
+    var samples = allItems().filter(function (i) { return i.sample; }).length;
+    if (!samples) { b.innerHTML = ''; return; }
+    b.innerHTML = '<div class="banner"><p><b>Sample stock is loaded</b> so you can see how it works. Change the counts to match your truck, or clear the samples and start fresh.</p><div class="acts">' +
+      (state.confirmClear
+        ? '<button class="btn sm danger" type="button" data-act="clear-yes">Remove ' + samples + ' samples</button><button class="btn sm" type="button" data-act="clear-no">Keep</button>'
+        : '<button class="btn sm" type="button" data-act="clear">Clear samples</button>') +
+      '</div></div>';
+  }
+
+  function renderHealth() {
+    var items = allItems(), n = items.length;
+    var c = { ok: 0, low: 0, out: 0 }, units = 0, value = 0;
+    items.forEach(function (it) { c[statusOf(it)]++; units += qtyOf(it); value += qtyOf(it) * it.cost; });
+    var need = c.low + c.out, title;
+    if (!state.loaded) title = 'Checking the truck';
+    else if (!n) title = 'The truck is empty';
+    else if (!need) title = 'Everything is stocked';
+    else title = need + (need === 1 ? ' item needs' : ' items need') + ' restocking';
+    var meter = n ? ['ok', 'low', 'out'].filter(function (k) { return c[k]; }).map(function (k) { return '<span class="s-' + k + '" style="flex:' + c[k] + '"></span>'; }).join('') : '';
+    $('health').innerHTML =
+      '<div><p class="kicker">Truck status</p><h2 class="health-title">' + title + '</h2>' +
+      '<div class="meter" role="img" aria-label="' + c.ok + ' stocked, ' + c.low + ' low, ' + c.out + ' out">' + meter + '</div>' +
+      '<ul class="legend"><li><i class="s-ok"></i><b>' + c.ok + '</b> stocked</li><li><i class="s-low"></i><b>' + c.low + '</b> low</li><li><i class="s-out"></i><b>' + c.out + '</b> out</li></ul></div>' +
+      '<dl class="stats"><div><dt>Items</dt><dd>' + n + '</dd></div><div><dt>Units on hand</dt><dd>' + units.toLocaleString('en-US') + '</dd></div><div><dt>Stock value</dt><dd>' + money(value) + '</dd></div></dl>';
+    var rs = $('rsCount'); var rn = items.filter(needsRestock).length;
+    rs.hidden = !rn; rs.textContent = rn;
+  }
+
+  function renderChips() {
+    var items = allItems(), html = '';
+    html += '<button class="chip" type="button" data-cat="all" aria-pressed="' + (state.cat === 'all') + '">All <span>' + items.length + '</span></button>';
+    cats().forEach(function (cat) {
+      var cn = items.filter(function (i) { return i.cat === cat; }).length;
+      if (!cn && state.cat !== cat) return;
+      html += '<button class="chip" type="button" data-cat="' + esc(cat) + '" aria-pressed="' + (state.cat === cat) + '">' + esc(cat) + ' <span>' + cn + '</span></button>';
+    });
+    $('chips').innerHTML = html;
+  }
+
+  function gasChip(g) {
+    if (!g) return '';
+    var col = GAS[g] || 'var(--line)';
+    return '<span class="gas" title="Cylinder color for ' + esc(g) + '"><i style="background:' + col + '"></i>' + esc(g) + '</span>';
+  }
+
+  function rowHtml(it) {
+    var q = qtyOf(it), st = statusOf(it);
+    var scale = Math.max(it.par, q, 1);
+    var fill = Math.round(q / scale * 100), tick = Math.round(Math.min(it.min, scale) / scale * 100);
+    var meta = '';
+    if (it.spec) meta += '<span class="spec">' + esc(it.spec) + '</span>';
+    if (it.loc) meta += '<span>' + esc(it.loc) + '</span>';
+    return '<article class="row" data-id="' + esc(it.id) + '">' +
+      '<div class="r-id"><div class="r-name"><h3>' + esc(it.name) + '</h3>' + gasChip(it.gas) + '</div>' + (meta ? '<p class="meta">' + meta + '</p>' : '') + '</div>' +
+      '<div class="gauge"><div class="track"><div class="fill" data-s="' + st + '" style="width:' + fill + '%"></div>' + (it.min > 0 ? '<div class="tick" style="left:calc(' + tick + '% - 1px)"></div>' : '') + '</div>' +
+      '<div class="gl"><span>Restock at ' + it.min + '</span><span>Par ' + it.par + (it.unit ? ' ' + esc(it.unit) : '') + '</span></div></div>' +
+      '<div class="stepper"><button type="button" data-act="dec" aria-label="Remove one ' + esc(it.name) + '">' + ICON.minus + '</button>' +
+      '<input class="qty" type="number" inputmode="numeric" min="0" max="9999" value="' + q + '" aria-label="Quantity of ' + esc(it.name) + (it.spec ? ' ' + esc(it.spec) : '') + '">' +
+      '<button type="button" data-act="inc" aria-label="Add one ' + esc(it.name) + '">' + ICON.plus + '</button></div>' +
+      '<span class="pill" data-s="' + st + '"><i></i>' + STATUS_LABEL[st] + '</span>' +
+      '<button class="iconbtn" type="button" data-act="edit" aria-label="Edit ' + esc(it.name) + '">' + ICON.edit + '</button>' +
+      '</article>';
+  }
+
+  function emptyHtml() {
+    if (!state.loaded) return '<div class="empty"><h2>Loading your stock</h2><p>One moment.</p></div>';
+    return '<div class="empty"><h2>Nothing on the truck yet</h2><p>Add parts one at a time, or start from a typical service truck list and edit the counts to match yours.</p>' +
+      '<div class="acts"><button class="btn primary" type="button" data-act="starter">Load starter stock</button><button class="btn" type="button" data-act="add">Add an item</button></div></div>';
+  }
+
+  function renderStock() {
+    var all = allItems();
+    if (!all.length) return emptyHtml();
+    var list = visibleItems();
+    if (!list.length) {
+      return '<div class="empty"><h2>No items match</h2><p>Try a different search or clear the filters.</p><div class="acts"><button class="btn" type="button" data-act="reset">Clear filters</button></div></div>';
+    }
+    if (state.sort !== 'category') {
+      return '<div class="list"><section class="group"><header class="ghead"><h2>' + list.length + (list.length === 1 ? ' item' : ' items') + '</h2><span>' + unitsOf(list) + ' units</span></header>' + list.map(rowHtml).join('') + '</section></div>';
+    }
+    var out = '';
+    cats().forEach(function (cat) {
+      var g = list.filter(function (i) { return i.cat === cat; });
+      if (!g.length) return;
+      out += '<section class="group"><header class="ghead"><h2>' + esc(cat) + '</h2><span>' + g.length + (g.length === 1 ? ' item' : ' items') + ' · ' + unitsOf(g) + ' units</span></header>' + g.map(rowHtml).join('') + '</section>';
+    });
+    return '<div class="list">' + out + '</div>';
+  }
+  function unitsOf(arr) { return arr.reduce(function (s, i) { return s + qtyOf(i); }, 0).toLocaleString('en-US'); }
+
+  function restockLines() {
+    return allItems().filter(needsRestock).sort(function (a, b) {
+      return cats().indexOf(a.cat) - cats().indexOf(b.cat) || a.name.localeCompare(b.name, undefined, { numeric: true });
+    }).map(function (it) { var q = qtyOf(it); return { it: it, have: q, need: it.par - q, cost: (it.par - q) * it.cost }; });
+  }
+  function restockText(lines) {
+    var d = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    var t = 'Truck restock, ' + d + '\n', last = '', total = 0;
+    lines.forEach(function (l) {
+      if (l.it.cat !== last) { t += '\n' + l.it.cat + '\n'; last = l.it.cat; }
+      t += '- ' + l.it.name + (l.it.spec ? ', ' + l.it.spec : '') + ': order ' + l.need + (l.it.unit ? ' ' + l.it.unit : '') + ' (have ' + l.have + ', par ' + l.it.par + ')\n';
+      total += l.cost;
+    });
+    if (total) t += '\nEstimated cost ' + money2(total) + '\n';
+    return t;
+  }
+
+  function renderRestock() {
+    if (!allItems().length) return emptyHtml();
+    var lines = restockLines();
+    if (!lines.length) return '<div class="empty"><h2>Nothing to restock</h2><p>Every item is above its restock level.</p></div>';
+    var total = lines.reduce(function (s, l) { return s + l.cost; }, 0);
+    var out = '<div class="rs-head"><p>Items at or below their restock level, filled up to par.</p><button class="btn" type="button" data-act="copy">' + ICON.copy + 'Copy list</button></div>';
+    var cs = cats();
+    var body = '';
+    cs.forEach(function (cat) {
+      var g = lines.filter(function (l) { return l.it.cat === cat; });
+      if (!g.length) return;
+      body += '<section class="group"><header class="ghead"><h2>' + esc(cat) + '</h2><span>' + g.length + (g.length === 1 ? ' item' : ' items') + '</span></header>' +
+        g.map(function (l) {
+          var st = statusOf(l.it);
+          return '<div class="rrow"><div class="r-id"><div class="r-name"><h3>' + esc(l.it.name) + '</h3>' + gasChip(l.it.gas) + '</div>' +
+            (l.it.spec ? '<p class="meta"><span class="spec">' + esc(l.it.spec) + '</span></p>' : '') + '</div>' +
+            '<div><span class="lbl">On truck</span><p class="num">' + l.have + ' <span class="pill" data-s="' + st + '" style="height:20px;padding:0 7px;font-size:11px">' + STATUS_LABEL[st] + '</span></p></div>' +
+            '<div><span class="lbl">Order</span><p class="num big">+' + l.need + (l.it.unit ? ' ' + esc(l.it.unit) : '') + '</p></div>' +
+            '<div><span class="lbl">Estimate</span><p class="num">' + (l.cost ? money2(l.cost) : '–') + '</p></div></div>';
+        }).join('') + '</section>';
+    });
+    out += '<div class="list">' + body + '</div>';
+    if (total) out += '<div class="rtotal" style="border:1px solid var(--line);border-radius:14px;background:var(--surface)"><span>Estimated cost</span><span class="num" style="color:var(--fg)">' + money2(total) + '</span></div>';
+    if (state.copyText) out += '<textarea class="copybox" id="copybox" readonly aria-label="Restock list text">' + esc(state.copyText) + '</textarea>';
+    return '<div style="display:flex;flex-direction:column;gap:14px">' + out + '</div>';
+  }
+
+  /* ---------- truck photos ---------- */
+  var TRUCK_GLYPH = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16.5V7a1 1 0 0 1 1-1h9v10.5M13 9.5h4l3 3.5v3.5h-7"></path><circle cx="7" cy="17.5" r="1.8"></circle><circle cx="16.5" cy="17.5" r="1.8"></circle></svg>';
+  function avatarHtml(photo, cls) {
+    return photo ? '<img class="avatar ' + (cls || '') + '" src="' + esc(photo) + '" alt="">'
+      : '<span class="avatar ph ' + (cls || '') + '">' + TRUCK_GLYPH + '</span>';
+  }
+  function resizePhoto(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var side = Math.min(img.width, img.height), size = 192, c = document.createElement('canvas');
+        c.width = c.height = size;
+        c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('unreadable')); };
+      img.src = url;
+    });
+  }
+  function renderTruckPhoto() {
+    $('tPhotoPrev').innerHTML = avatarHtml(state.tPhoto, 'big');
+    $('tPhotoBtn').textContent = state.tPhoto ? 'Change photo' : 'Choose photo';
+    $('tPhotoClear').hidden = !state.tPhoto;
+  }
+
+  /* ---------- trucks: home page ---------- */
+  function truckStats(id) {
+    var items = everyItem().filter(function (i) { return i.truck === id; });
+    var c = { ok: 0, low: 0, out: 0 }, units = 0, value = 0;
+    items.forEach(function (it) { c[statusOf(it)]++; units += qtyOf(it); value += qtyOf(it) * it.cost; });
+    return { n: items.length, c: c, units: units, value: value };
+  }
+  function truckCard(t) {
+    var st = truckStats(t.id), c = st.c, pill;
+    if (!st.n) pill = '<span class="pill" data-s="none"><i></i>No items yet</span>';
+    else if (c.out) pill = '<span class="pill" data-s="out"><i></i>' + c.out + ' out</span>';
+    else if (c.low) pill = '<span class="pill" data-s="low"><i></i>' + c.low + ' low</span>';
+    else pill = '<span class="pill" data-s="ok"><i></i>All stocked</span>';
+    var meter = st.n ? ['ok', 'low', 'out'].filter(function (k) { return c[k]; }).map(function (k) { return '<span class="s-' + k + '" style="flex:' + c[k] + '"></span>'; }).join('') : '';
+    return '<button class="tcard" type="button" data-truck="' + esc(t.id) + '" aria-label="Open ' + esc(t.name) + '">' +
+      '<span class="tc-top">' + avatarHtml(t.photo, 'card') + '<span class="tc-name"><b>' + esc(t.name) + '</b>' + (t.note ? '<small>' + esc(t.note) + '</small>' : '') + '</span>' + pill + '</span>' +
+      '<span class="meter">' + meter + '</span>' +
+      '<span class="tc-stats"><span><small>Items</small><b>' + st.n + '</b></span><span><small>Units</small><b>' + st.units.toLocaleString('en-US') + '</b></span><span><small>Value</small><b>' + money(st.value) + '</b></span></span>' +
+      '</button>';
+  }
+  function renderHome() {
+    var h = '', list = truckList();
+    if (!state.loaded || !state.trucksLoaded) {
+      h = '<div class="empty"><h2>Loading your trucks</h2><p>One moment.</p></div>';
+    } else if (!list.length) {
+      h = '<div class="empty"><h2>No trucks yet</h2><p>Add a truck to start tracking what is on it. You can copy the parts list from one truck to the next.</p>' +
+        '<div class="acts"><button class="btn primary" type="button" data-act="add-truck">Add your first truck</button></div></div>';
+    } else {
+      var need = 0, value = 0;
+      list.forEach(function (t) { var s = truckStats(t.id); need += s.c.low + s.c.out; value += s.value; });
+      h = '<section class="fleet" aria-label="All trucks"><div><p class="kicker">All trucks</p><p class="fleet-title">' + list.length + (list.length === 1 ? ' truck' : ' trucks') + '</p></div>' +
+        '<dl class="stats"><div><dt>Need restocking</dt><dd>' + need + '</dd></div><div><dt>Stock value</dt><dd>' + money(value) + '</dd></div></dl></section>' +
+        '<div class="tgrid">' + list.map(truckCard).join('') +
+        '<button class="tadd" type="button" data-act="add-truck"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Add truck</button></div>';
+    }
+    $('homeView').innerHTML = h;
+  }
+
+  function openTruck(id) {
+    state.truckId = id; state.view = 'stock'; state.q = ''; state.status = 'all'; state.cat = 'all'; state.confirmClear = false; state.copyText = '';
+    $('q').value = ''; syncSeg(); window.scrollTo(0, 0); render();
+  }
+  function goHome() {
+    closeSheet(); closeData(); closeTruckSheet();
+    state.truckId = null; window.scrollTo(0, 0); render();
+  }
+
+  /* ---------- trucks: add / edit / delete ---------- */
+  function openTruckSheet(id) {
+    state.tEdit = id || null; state.tDelete = false;
+    var t = id ? getTruck(id) : null;
+    state.tPhoto = t ? t.photo : '';
+    $('tSheetTitle').textContent = t ? 'Truck settings' : 'Add truck';
+    $('t-name').value = t ? t.name : '';
+    $('t-note').value = t ? t.note : '';
+    $('tFromWrap').hidden = !!t;
+    var opts = '<option value="">Empty truck</option>';
+    truckList().forEach(function (tr) {
+      var n = everyItem().filter(function (i) { return i.truck === tr.id; }).length;
+      opts += '<option value="' + esc(tr.id) + '">Copy parts from ' + esc(tr.name) + ' (' + n + ' items)</option>';
+    });
+    $('t-from').innerHTML = opts;
+    $('t-from').value = (!t && state.truckId) ? state.truckId : '';
+    $('t-reset').checked = true;
+    syncTruckForm(); renderTruckDelete(); renderTruckPhoto();
+    $('truckScrim').hidden = false;
+    setTimeout(function () { $('t-name').focus(); }, 30);
+  }
+  function closeTruckSheet() { $('truckScrim').hidden = true; state.tEdit = null; }
+  function syncTruckForm() { $('tResetWrap').hidden = !!state.tEdit || !$('t-from').value; }
+  function renderTruckDelete() {
+    var g = $('tDelGrp');
+    if (!state.tEdit) { g.innerHTML = ''; return; }
+    var n = everyItem().filter(function (i) { return i.truck === state.tEdit; }).length;
+    g.innerHTML = state.tDelete
+      ? '<button class="btn sm danger" type="button" data-t="delete-yes">Delete truck and ' + n + (n === 1 ? ' item' : ' items') + '</button><button class="btn sm" type="button" data-t="delete-no">Keep</button>'
+      : '<button class="btn sm danger" type="button" data-t="delete">Delete truck</button>';
+  }
+  async function saveTruck(e) {
+    e.preventDefault();
+    var name = $('t-name').value.trim();
+    if (!name) { $('t-name').focus(); toast('Give the truck a name'); return; }
+    var editing = state.tEdit, base = editing ? getTruck(editing) : null;
+    var id = editing || newId(name);
+    var data = { name: name.slice(0, 60), note: $('t-note').value.trim().slice(0, 80), photo: state.tPhoto || '', createdAt: base && base.createdAt ? base.createdAt : Date.now() };
+    var from = editing ? '' : $('t-from').value, reset = $('t-reset').checked;
+    var src = from ? everyItem().filter(function (i) { return i.truck === from; }) : [];
+    closeTruckSheet();
+    state.trucks.set(id, normTruck(id, data));
+    try {
+      await backend.setTruck(id, data);
+      if (!editing) openTruck(id); else render();
+      if (src.length) {
+        toast('Copying ' + src.length + ' parts');
+        for (var i = 0; i < src.length; i++) {
+          var it = src[i];
+          await backend.set(newId(it.name), {
+            name: it.name, cat: it.cat, spec: it.spec, qty: reset ? 0 : qtyOf(it), min: it.min, par: it.par, unit: it.unit,
+            loc: it.loc, cost: it.cost, gas: it.gas, sample: false, updatedAt: Date.now(), truck: id
+          });
+        }
+      }
+      toast(editing ? 'Saved' : (src.length ? 'Truck added with ' + src.length + ' parts' : 'Truck added'));
+    } catch (err) { failed(); }
+  }
+  async function deleteTruck() {
+    var id = state.tEdit; if (!id) return;
+    var items = everyItem().filter(function (i) { return i.truck === id; });
+    closeTruckSheet(); goHome(); toast('Deleting truck');
+    try {
+      for (var i = 0; i < items.length; i++) await backend.remove(items[i].id);
+      await backend.removeTruck(id);
+      state.trucks.delete(id); render();
+      toast('Truck deleted');
+    } catch (err) { failed(); }
+  }
+
+  function render() {
+    renderSync();
+    var home = !state.truckId;
+    $('homeView').hidden = !home; $('truckView').hidden = home;
+    $('backBtn').hidden = home; $('editTruckBtn').hidden = home; $('dataBtn').hidden = home; $('addBtn').hidden = home; $('addTruckBtn').hidden = !home;
+    if (home) {
+      $('pageAvatar').hidden = true; $('pageMark').style.display = '';
+      $('pageTitle').textContent = 'Truck Stock'; $('pageSub').textContent = 'Parts and supplies across your trucks.';
+      document.title = 'Truck Stock';
+      renderHome(); return;
+    }
+    var tr = getTruck(state.truckId);
+    var ph = tr && tr.photo ? tr.photo : '';
+    $('pageAvatar').hidden = !ph; $('pageMark').style.display = ph ? 'none' : '';
+    if (ph && $('pageAvatar').getAttribute('src') !== ph) $('pageAvatar').src = ph;
+    $('pageTitle').textContent = tr ? tr.name : 'Truck';
+    $('pageSub').textContent = tr && tr.note ? tr.note : 'HVAC parts, refrigerant and supplies on the truck.';
+    renderBanner(); renderHealth();
+    var isStock = state.view === 'stock';
+    $('tab-stock').setAttribute('aria-selected', isStock);
+    $('tab-restock').setAttribute('aria-selected', !isStock);
+    $('stockTools').hidden = !isStock || !allItems().length;
+    if (isStock) renderChips();
+    var ae = document.activeElement, keep = ae && ae.classList && ae.classList.contains('qty') ? ae : null;
+    if (keep) return softRenderIfEditing();
+    var fRow = ae && ae.closest ? ae.closest('[data-id]') : null;
+    var fId = fRow ? fRow.getAttribute('data-id') : null;
+    var fAct = ae && ae.getAttribute ? ae.getAttribute('data-act') : null;
+    $('main').innerHTML = isStock ? renderStock() : renderRestock();
+    if (fId && fAct) {
+      var again = $('main').querySelector('[data-id="' + fId.replace(/"/g, '') + '"] [data-act="' + fAct + '"]');
+      if (again) again.focus();
+    }
+    if (state.copyText && !isStock) { var cb = $('copybox'); if (cb) { cb.focus(); cb.select(); } }
+  }
+  // While someone is typing a quantity, leave the field alone and refresh around it.
+  function softRenderIfEditing() { /* the change event re-renders after commit */ }
+
+  /* ---------- events ---------- */
+  $('main').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-act]'); if (!btn) return;
+    var act = btn.getAttribute('data-act');
+    var row = btn.closest('[data-id]'); var id = row ? row.getAttribute('data-id') : null;
+    var it = id ? state.items.get(id) : null;
+    if (act === 'inc' && it) setQty(id, qtyOf(it) + 1);
+    else if (act === 'dec' && it) setQty(id, qtyOf(it) - 1);
+    else if (act === 'edit' && id) openSheet(id);
+    else if (act === 'starter') loadStarter();
+    else if (act === 'add') openSheet();
+    else if (act === 'reset') { state.q = ''; state.status = 'all'; state.cat = 'all'; $('q').value = ''; syncSeg(); render(); }
+    else if (act === 'copy') copyList();
+  });
+  $('main').addEventListener('change', function (e) {
+    if (!e.target.classList.contains('qty')) return;
+    var row = e.target.closest('[data-id]'); if (!row) return;
+    setQty(row.getAttribute('data-id'), e.target.value === '' ? 0 : e.target.value);
+  });
+  $('main').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.classList.contains('qty')) e.target.blur();
+  });
+  $('banner').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-act]'); if (!b) return;
+    var a = b.getAttribute('data-act');
+    if (a === 'clear') { state.confirmClear = true; render(); }
+    else if (a === 'clear-no') { state.confirmClear = false; render(); }
+    else if (a === 'clear-yes') clearSamples();
+  });
+  $('tabs').addEventListener('click', function (e) {
+    var t = e.target.closest('[data-view]'); if (!t) return;
+    state.view = t.getAttribute('data-view'); state.copyText = ''; render();
+  });
+  $('chips').addEventListener('click', function (e) {
+    var c = e.target.closest('[data-cat]'); if (!c) return;
+    state.cat = c.getAttribute('data-cat'); render();
+  });
+  $('q').addEventListener('input', function (e) { state.q = e.target.value; render(); });
+  $('sort').addEventListener('change', function (e) { state.sort = e.target.value; render(); });
+  function syncSeg() {
+    Array.prototype.forEach.call($('statusSeg').children, function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-status') === state.status); });
+  }
+  $('statusSeg').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-status]'); if (!b) return;
+    state.status = b.getAttribute('data-status'); syncSeg(); render();
+  });
+  $('addBtn').addEventListener('click', function () { openSheet(); });
+  $('backBtn').addEventListener('click', goHome);
+  $('addTruckBtn').addEventListener('click', function () { openTruckSheet(); });
+  $('editTruckBtn').addEventListener('click', function () { openTruckSheet(state.truckId); });
+  $('homeView').addEventListener('click', function (e) {
+    var card = e.target.closest('[data-truck]');
+    if (card) { openTruck(card.getAttribute('data-truck')); return; }
+    if (e.target.closest('[data-act="add-truck"]')) openTruckSheet();
+  });
+  $('closeTruck').addEventListener('click', closeTruckSheet);
+  $('cancelTruck').addEventListener('click', closeTruckSheet);
+  $('truckScrim').addEventListener('mousedown', function (e) { if (e.target === $('truckScrim')) closeTruckSheet(); });
+  $('t-from').addEventListener('change', syncTruckForm);
+  $('tPhotoBtn').addEventListener('click', function () { $('tPhotoFile').click(); });
+  $('tPhotoClear').addEventListener('click', function () { state.tPhoto = ''; renderTruckPhoto(); });
+  $('tPhotoFile').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    resizePhoto(f).then(function (url) { state.tPhoto = url; renderTruckPhoto(); },
+      function () { toast('That image could not be read. Try a JPG or PNG.'); });
+  });
+  $('truckForm').addEventListener('submit', saveTruck);
+  $('truckForm').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-t]'); if (!b) return;
+    var a = b.getAttribute('data-t');
+    if (a === 'delete') { state.tDelete = true; renderTruckDelete(); }
+    else if (a === 'delete-no') { state.tDelete = false; renderTruckDelete(); }
+    else if (a === 'delete-yes') deleteTruck();
+  });
+  $('closeSheet').addEventListener('click', closeSheet);
+  $('cancelBtn').addEventListener('click', closeSheet);
+  $('scrim').addEventListener('mousedown', function (e) { if (e.target === $('scrim')) closeSheet(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (!$('scrim').hidden) closeSheet();
+    else if (!$('dataScrim').hidden) closeData();
+    else if (!$('truckScrim').hidden) closeTruckSheet();
+  });
+  $('f-cat').addEventListener('change', toggleGas);
+  $('f-name').addEventListener('focus', function () { if (!combo.open) openCombo(); });
+  $('f-name').addEventListener('input', openCombo);
+  $('f-name').addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); if (!combo.open) openCombo(); highlight(combo.idx + 1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); if (!combo.open) openCombo(); highlight(combo.idx - 1); }
+    else if (e.key === 'Enter' && combo.open && combo.idx >= 0) { e.preventDefault(); pickPart(combo.opts[combo.idx]); }
+    else if (e.key === 'Escape' && combo.open) { e.preventDefault(); e.stopPropagation(); closeCombo(); }
+    else if (e.key === 'Tab') closeCombo();
+  });
+  $('comboBtn').addEventListener('mousedown', function (e) { e.preventDefault(); });
+  $('comboBtn').addEventListener('click', function () {
+    if (combo.open) closeCombo(); else { $('f-name').focus(); openCombo(); }
+  });
+  $('partList').addEventListener('mousedown', function (e) { e.preventDefault(); });
+  $('partList').addEventListener('click', function (e) {
+    var li = e.target.closest('.popt'); if (!li) return;
+    pickPart(combo.opts[Number(li.getAttribute('data-i'))]);
+  });
+  $('partList').addEventListener('mousemove', function (e) {
+    var li = e.target.closest('.popt'); if (!li) return;
+    var i = Number(li.getAttribute('data-i'));
+    if (i !== combo.idx) highlight(i, true);
+  });
+  document.addEventListener('mousedown', function (e) {
+    if (combo.open && !e.target.closest('#combo')) closeCombo();
+  });
+  $('form').addEventListener('submit', saveForm);
+  $('form').addEventListener('click', async function (e) {
+    var b = e.target.closest('[data-sheet]'); if (!b) return;
+    var a = b.getAttribute('data-sheet');
+    if (a === 'delete') { state.confirmDelete = true; renderDelete(); }
+    else if (a === 'delete-no') { state.confirmDelete = false; renderDelete(); }
+    else if (a === 'delete-yes') {
+      var id = state.editingId; closeSheet();
+      try { await backend.remove(id); toast('Item deleted'); } catch (err) { failed(); }
+    }
+  });
+
+  /* ---------- CSV import / export ---------- */
+  var CSV_HEAD = ['Part name', 'Category', 'Size or part number', 'On truck', 'Restock at', 'Par level', 'Unit', 'Location', 'Cost each', 'Refrigerant'];
+  var ALIAS = {
+    name: ['partname', 'name', 'part', 'item', 'itemname', 'description'],
+    cat: ['category', 'cat', 'type', 'group'],
+    spec: ['sizeorpartnumber', 'size', 'spec', 'specification', 'partnumber', 'partno', 'model'],
+    qty: ['ontruck', 'qty', 'quantity', 'onhand', 'count', 'stock'],
+    min: ['restockat', 'min', 'minimum', 'reorderpoint', 'minqty', 'lowlevel'],
+    par: ['parlevel', 'par', 'target', 'max', 'maxqty'],
+    unit: ['unit', 'uom', 'units'],
+    loc: ['location', 'loc', 'bin', 'where', 'whereonthetruck'],
+    cost: ['costeach', 'cost', 'price', 'unitcost', 'costeachusd'],
+    gas: ['refrigerant', 'gas', 'refrigeranttype']
+  };
+  var BLANK_TEMPLATE = [
+    ['Dual run capacitor', 'Electrical', '45/5 µF 440V', 0, 2, 6, 'ea', 'Drawer A1', 14, ''],
+    ['R-410A refrigerant', 'Refrigerant', '25 lb cylinder', 0, 1, 3, 'cyl', 'Rear shelf', 285, 'R-410A'],
+    ['Pleated filter MERV 8', 'Filters & Belts', '16x25x1', 0, 8, 24, 'ea', 'Driver bin 1', 4.5, '']
+  ];
+  var impOpts = { updateMatches: true, overwriteQty: false, clearSamples: true };
+  var imp = null;       // { fileName, error, parsed }
+  var csvText = '';     // fallback text when a file can't be saved directly
+
+  function csvCell(v) {
+    v = String(v == null ? '' : v);
+    if (/^[=+@\t\r]/.test(v)) v = "'" + v;
+    return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }
+  function csvLine(arr) { return arr.map(csvCell).join(','); }
+  function buildCsv() {
+    var order = cats();
+    var list = allItems().sort(function (a, b) {
+      return order.indexOf(a.cat) - order.indexOf(b.cat) || a.name.localeCompare(b.name, undefined, { numeric: true }) || a.spec.localeCompare(b.spec, undefined, { numeric: true });
+    });
+    var lines = [csvLine(CSV_HEAD)];
+    list.forEach(function (it) {
+      lines.push(csvLine([it.name, it.cat, it.spec, qtyOf(it), it.min, it.par, it.unit, it.loc, it.cost || '', it.gas]));
+    });
+    return lines.join('\r\n') + '\r\n';
+  }
+  function buildBlankCsv() {
+    return [csvLine(CSV_HEAD)].concat(BLANK_TEMPLATE.map(csvLine)).join('\r\n') + '\r\n';
+  }
+
+  async function saveFile(filename, text) {
+    var body = '﻿' + text;   // byte-order mark so Excel reads µ correctly
+    var dl = null;
+    try { dl = (window.claude && window.claude.use) ? await window.claude.use('downloads') : null; } catch (e) { dl = null; }
+    if (dl) {
+      try { await dl.save({ filename: filename, data: body }); toast('Saved ' + filename); return; }
+      catch (e) {
+        if (e && e.code === 'declined') return;
+        if (!e || (e.code !== 'unavailable' && e.code !== 'not_granted' && e.code !== 'capability_disabled' && e.code !== 'capability_removed')) { toast('Could not save the file.'); return; }
+      }
+    }
+    var framed = false;
+    try { framed = window.self !== window.top; } catch (e) { framed = true; }
+    if (!framed) {
+      try {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([body], { type: 'text/csv;charset=utf-8' }));
+        a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+        toast('Saved ' + filename); return;
+      } catch (e) {}
+    }
+    csvText = text; renderData(); toast('Select the text and paste it into a .csv file');
+  }
+
+  function parseCsv(text) {
+    text = String(text || '').replace(/^﻿/, '');
+    var head = text.split(/\r\n|\n|\r/)[0] || '';
+    var cnt = { ',': 0, ';': 0, '\t': 0 };
+    head.split('').forEach(function (ch) { if (cnt[ch] != null) cnt[ch]++; });
+    var d = ','; if (cnt[';'] > cnt[d]) d = ';'; if (cnt['\t'] > cnt[d]) d = '\t';
+    var rows = [], row = [], f = '', q = false, i, ch;
+    for (i = 0; i < text.length; i++) {
+      ch = text.charAt(i);
+      if (q) {
+        if (ch === '"') { if (text.charAt(i + 1) === '"') { f += '"'; i++; } else q = false; }
+        else f += ch;
+      } else if (ch === '"' && f === '') q = true;
+      else if (ch === d) { row.push(f); f = ''; }
+      else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && text.charAt(i + 1) === '\n') i++;
+        row.push(f); f = ''; rows.push(row); row = [];
+      } else f += ch;
+    }
+    if (f !== '' || row.length) { row.push(f); rows.push(row); }
+    return rows.filter(function (r) { return r.some(function (x) { return String(x).trim() !== ''; }); });
+  }
+  function hkey(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+  function clean(v) { v = String(v == null ? '' : v).trim(); return /^'[=+@]/.test(v) ? v.slice(1) : v; }
+  function pnum(v) { var n = parseFloat(String(v).replace(/[$,\s]/g, '')); return isFinite(n) ? n : null; }
+  function keyOf(name, spec) { return (name + '|' + spec).toLowerCase().replace(/\s+/g, ' ').trim(); }
+  function matchCat(v) {
+    v = clean(v); if (!v) return 'Other';
+    var all = cats(), k = hkey(v);
+    for (var i = 0; i < all.length; i++) if (hkey(all[i]) === k) return all[i];
+    return v.slice(0, 40);
+  }
+  function matchGas(v) {
+    v = clean(v); if (!v) return '';
+    var k = hkey(v), names = Object.keys(GAS);
+    for (var i = 0; i < names.length; i++) if (hkey(names[i]) === k) return names[i];
+    return v.slice(0, 12);
+  }
+
+  function parseImport(text) {
+    var rows = parseCsv(text);
+    if (rows.length < 2) return { error: 'That file has no rows to import. Use the template or an export as a starting point.' };
+    var map = {};
+    rows[0].forEach(function (h, idx) {
+      var k = hkey(h);
+      Object.keys(ALIAS).forEach(function (field) {
+        if (map[field] == null && ALIAS[field].indexOf(k) >= 0) map[field] = idx;
+      });
+    });
+    if (map.name == null) return { error: 'No "Part name" column found. The first row must be a header row; use the template to see the columns.' };
+    var out = [], skipped = [];
+    rows.slice(1, 1001).forEach(function (r, n) {
+      var line = n + 2;
+      function cell(field) { return map[field] == null ? '' : clean(r[map[field]]); }
+      var name = cell('name');
+      if (!name) { skipped.push('Row ' + line + ': no part name'); return; }
+      out.push({
+        name: name.slice(0, 80), cat: cell('cat'), spec: cell('spec').slice(0, 60),
+        qty: pnum(cell('qty')), min: pnum(cell('min')), par: pnum(cell('par')),
+        unit: cell('unit').slice(0, 12), loc: cell('loc').slice(0, 40), cost: pnum(cell('cost')), gas: cell('gas')
+      });
+    });
+    var extra = rows.length - 1 > 1000 ? rows.length - 1001 : 0;
+    if (extra) skipped.push(extra + ' rows past the first 1,000 were left out');
+    return { rows: out, skipped: skipped, total: Math.min(rows.length - 1, 1000), columns: Object.keys(map) };
+  }
+
+  function buildPlan(parsed) {
+    var existing = allItems().filter(function (it) { return !(impOpts.clearSamples && it.sample); });
+    var byKey = {};
+    existing.forEach(function (it) { byKey[keyOf(it.name, it.spec)] = it; });
+    var seen = {}, uniq = [], dups = 0;
+    parsed.rows.forEach(function (r) {
+      var k = keyOf(r.name, r.spec);
+      if (seen[k] != null) { uniq[seen[k]] = r; dups++; return; }
+      seen[k] = uniq.length; uniq.push(r);
+    });
+    var plan = { add: [], upd: [], keep: 0, dups: dups };
+    uniq.forEach(function (r) {
+      var m = byKey[keyOf(r.name, r.spec)];
+      if (!m) plan.add.push(r);
+      else if (impOpts.updateMatches) plan.upd.push({ r: r, m: m });
+      else plan.keep++;
+    });
+    return plan;
+  }
+  function whole(n, d) { return n == null ? d : Math.max(0, Math.round(n)); }
+  function newData(r) {
+    var min = whole(r.min, 1), par = Math.max(min, whole(r.par, Math.max(3, min)));
+    return {
+      name: r.name, cat: matchCat(r.cat), spec: r.spec, gas: matchGas(r.gas), qty: whole(r.qty, 0), min: min, par: par,
+      unit: r.unit, loc: r.loc, cost: r.cost == null ? 0 : Math.max(0, r.cost), sample: false, updatedAt: Date.now(), truck: state.truckId
+    };
+  }
+  function updatedData(m, r) {
+    var d = {
+      name: m.name, cat: m.cat, spec: m.spec, gas: m.gas, qty: qtyOf(m), min: m.min, par: m.par,
+      unit: m.unit, loc: m.loc, cost: m.cost, sample: false, updatedAt: Date.now(), truck: m.truck
+    };
+    if (r.cat) d.cat = matchCat(r.cat);
+    if (r.gas) d.gas = matchGas(r.gas);
+    if (r.unit) d.unit = r.unit;
+    if (r.loc) d.loc = r.loc;
+    if (r.cost != null) d.cost = Math.max(0, r.cost);
+    if (r.min != null) d.min = whole(r.min, d.min);
+    if (r.par != null) d.par = whole(r.par, d.par);
+    if (impOpts.overwriteQty && r.qty != null) d.qty = whole(r.qty, d.qty);
+    d.par = Math.max(d.par, d.min);
+    return d;
+  }
+
+  async function applyImport() {
+    if (!imp || !imp.parsed || !backend) return;
+    var plan = buildPlan(imp.parsed);
+    var removeIds = impOpts.clearSamples ? allItems().filter(function (i) { return i.sample; }).map(function (i) { return i.id; }) : [];
+    var total = plan.add.length + plan.upd.length;
+    closeData();
+    toast('Importing ' + total + ' items');
+    try {
+      for (var i = 0; i < removeIds.length; i++) await backend.remove(removeIds[i]);
+      for (var j = 0; j < plan.upd.length; j++) await backend.set(plan.upd[j].m.id, updatedData(plan.upd[j].m, plan.upd[j].r));
+      for (var k = 0; k < plan.add.length; k++) await backend.set(newId(plan.add[k].name), newData(plan.add[k]));
+      toast('Imported ' + plan.add.length + ' new, updated ' + plan.upd.length);
+    } catch (e) { failed(); }
+  }
+
+  function readFile(file) {
+    if (!file) return;
+    var done = function (text) {
+      var parsed = parseImport(text);
+      imp = parsed.error ? { fileName: file.name, error: parsed.error } : { fileName: file.name, parsed: parsed };
+      renderData();
+    };
+    if (file.text) file.text().then(done, function () { imp = { fileName: file.name, error: 'Could not read that file.' }; renderData(); });
+    else {
+      var fr = new FileReader();
+      fr.onload = function () { done(String(fr.result || '')); };
+      fr.onerror = function () { imp = { fileName: file.name, error: 'Could not read that file.' }; renderData(); };
+      fr.readAsText(file);
+    }
+  }
+
+  function chk(id, label, on, hint) {
+    return '<label class="chk"><input type="checkbox" id="' + id + '"' + (on ? ' checked' : '') + '><span>' + label + (hint ? '<small>' + hint + '</small>' : '') + '</span></label>';
+  }
+  function renderData() {
+    var h = '';
+    h += '<section class="dsec"><h3>Export</h3><p>Save this truck’s stock as a CSV file for Excel or Google Sheets.</p>' +
+      '<div class="dacts"><button class="btn" type="button" data-d="export">Export stock</button></div>' +
+      '<p class="hint">Counts are saved exactly as they are now. To set up another truck, use Add truck on the home page, or import this file there. <button class="linkbtn" type="button" data-d="blank">Blank template with examples</button></p></section>';
+    h += '<section class="dsec" id="dropzone"><h3>Import</h3><p>Choose a CSV with the same columns as an export. New parts are added to this truck, and parts that match by name and size are updated.</p>' +
+      '<div class="dacts"><button class="btn primary" type="button" data-d="choose">Choose CSV file</button></div>';
+    if (imp && imp.error) h += '<p class="derr" role="alert">' + esc(imp.error) + '</p>';
+    if (imp && imp.parsed) {
+      var plan = buildPlan(imp.parsed), p = imp.parsed;
+      var samples = allItems().filter(function (i) { return i.sample; }).length;
+      var n = plan.add.length + plan.upd.length;
+      h += '<div class="dprev"><p><b>' + esc(imp.fileName) + '</b> has ' + p.total + (p.total === 1 ? ' row' : ' rows') + '.</p><ul class="dstat">' +
+        '<li><b>' + plan.add.length + '</b> new</li>' +
+        '<li><b>' + plan.upd.length + '</b> updated</li>' +
+        (plan.keep ? '<li><b>' + plan.keep + '</b> left as is</li>' : '') +
+        (plan.dups ? '<li><b>' + plan.dups + '</b> repeated rows merged</li>' : '') +
+        (p.skipped.length ? '<li class="bad"><b>' + p.skipped.length + '</b> skipped</li>' : '') + '</ul>';
+      h += '<div class="dopts">' +
+        chk('opt-upd', 'Update parts that already match', impOpts.updateMatches, 'Same name and size. Changes category, unit, location, cost, restock and par levels.') +
+        chk('opt-qty', 'Also replace counts on hand', impOpts.overwriteQty, 'Leave off to keep this truck’s current counts.') +
+        (samples ? chk('opt-clr', 'Remove the ' + samples + ' sample items first', impOpts.clearSamples, '') : '') + '</div>';
+      if (p.skipped.length) h += '<ul class="dskip">' + p.skipped.slice(0, 5).map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>';
+      h += '<div class="dacts"><button class="btn primary" type="button" data-d="apply"' + (n ? '' : ' disabled') + '>Import ' + n + (n === 1 ? ' item' : ' items') + '</button><button class="btn" type="button" data-d="cancel">Cancel</button></div></div>';
+    }
+    h += '</section>';
+    if (csvText) h += '<section class="dsec"><h3>Copy this file</h3><p>Saving a file isn’t available here. Select all, copy, and paste into a text file ending in .csv.</p><textarea class="copybox" id="csvbox" readonly aria-label="CSV text">' + esc(csvText) + '</textarea></section>';
+    $('dataBody').innerHTML = h;
+    if (csvText) { var b = $('csvbox'); if (b) { b.focus(); b.select(); } }
+  }
+  function openData() { imp = null; csvText = ''; renderData(); $('dataScrim').hidden = false; }
+  function closeData() { $('dataScrim').hidden = true; imp = null; csvText = ''; }
+
+  $('dataBtn').addEventListener('click', openData);
+  $('closeData').addEventListener('click', closeData);
+  $('dataScrim').addEventListener('mousedown', function (e) { if (e.target === $('dataScrim')) closeData(); });
+  $('csvFile').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0]; readFile(f); e.target.value = '';
+  });
+  $('dataBody').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-d]'); if (!b) return;
+    var a = b.getAttribute('data-d');
+    var now = new Date(), pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    var stamp = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+    var tr = getTruck(state.truckId), tslug = slug(tr ? tr.name : 'truck');
+    if (a === 'export') saveFile('truck-stock-' + tslug + '-' + stamp + '.csv', buildCsv());
+    else if (a === 'blank') saveFile('truck-stock-blank-template.csv', buildBlankCsv());
+    else if (a === 'choose') $('csvFile').click();
+    else if (a === 'apply') applyImport();
+    else if (a === 'cancel') { imp = null; renderData(); }
+  });
+  $('dataBody').addEventListener('change', function (e) {
+    var id = e.target.id;
+    if (id === 'opt-upd') impOpts.updateMatches = e.target.checked;
+    else if (id === 'opt-qty') impOpts.overwriteQty = e.target.checked;
+    else if (id === 'opt-clr') impOpts.clearSamples = e.target.checked;
+    else return;
+    renderData();
+    var again = $(id); if (again) again.focus();
+  });
+  $('dataBody').addEventListener('dragover', function (e) { e.preventDefault(); });
+  $('dataBody').addEventListener('drop', function (e) {
+    e.preventDefault();
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; readFile(f);
+  });
+
+  async function copyList() {
+    var text = restockText(restockLines());
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('Restock list copied');
+    } catch (e) {
+      state.copyText = text; render(); toast('Select the text below and copy it');
+    }
+  }
+
+  boot();
+})();
+</script>
+
+</body></html>
