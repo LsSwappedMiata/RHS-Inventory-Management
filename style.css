@@ -374,7 +374,7 @@ h1 { font-family: var(--font-display); font-weight: 700; font-size: 26px; letter
   .fleet { grid-template-columns: 1fr; padding: 18px; }
   .fleet .stats { padding-left: 0; padding-top: 16px; border-left: 0; border-top: 1px solid var(--line); }
   .tgrid { grid-template-columns: 1fr; }
-  h1 { font-size: 23px; color: var(--bg); }
+  h1 { font-size: 23px; color: var(--fg); }
   .row {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas: "id edit" "gauge gauge" "qty status";
@@ -421,12 +421,3 @@ h1 { font-family: var(--font-display); font-weight: 700; font-size: 26px; letter
   .top-actions { width: 100%; }
   .top-actions .btn:not(.signout) { flex: 1 1 auto; }
 }
-
-/* Truck photos: show the whole picture, never cropped, in a 4:3 frame */
-img.avatar { object-fit: contain; background: var(--surface-2); }
-.avatar.big { width: 96px; height: 72px; border-radius: 14px; }
-#pageAvatar { width: 56px; height: 42px; border-radius: 10px; }
-
-/* Truck cards: let the status pill drop under the photo and name so the name never gets squeezed */
-.tc-top { flex-wrap: wrap; row-gap: 10px; }
-.tc-name { flex: 1 1 110px; }
