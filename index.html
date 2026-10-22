@@ -50,11 +50,12 @@
   <main class="auth" id="authView">
     <div class="auth-card">
       <img src="reynolds_logo_hires_dc44f00b.png" width="96" height="96" alt="Reynolds Home Services">
-      <h2 id="authTitle">Reynolds Home Services Inventory Management System</h2>
+      <h2 id="authTitle">Truck Stock</h2>
       <p id="authLead">Loading</p>
       <form id="authForm" novalidate hidden>
         <div class="f"><label for="a-email">Email</label><input id="a-email" type="email" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false"></div>
         <div class="f"><label for="a-pass">Password</label><input id="a-pass" type="password" autocomplete="current-password"></div>
+        <label class="chk" for="a-remember"><input type="checkbox" id="a-remember" checked><span>Keep me signed in<small>Stays signed in on this device. Turn off on a shared phone or computer.</small></span></label>
         <p class="derr" id="authErr" role="alert" hidden></p>
         <p class="auth-note" id="authNote" role="status" hidden></p>
         <button class="btn primary" id="authSubmit" type="submit">Sign in</button>
@@ -400,7 +401,11 @@
     function wrap(promise) { promise.catch(writeFailed); return Promise.resolve(); }
     return {
       onAuth: function (cb) { return Auth.onAuthStateChanged(auth, cb); },
-      signIn: function (email, pass) { return Auth.signInWithEmailAndPassword(auth, email, pass); },
+      signIn: async function (email, pass, remember) {
+        // Remembered: stays signed in until they sign out. Not remembered: signed out when the browser closes.
+        await Auth.setPersistence(auth, remember ? Auth.browserLocalPersistence : Auth.browserSessionPersistence);
+        return Auth.signInWithEmailAndPassword(auth, email, pass);
+      },
       signOut: function () { return Auth.signOut(auth); },
       resetPassword: function (email) { return Auth.sendPasswordResetEmail(auth, email); },
       collection: function (name) {
@@ -497,7 +502,7 @@
     $('authForm').hidden = st !== 'out';
     $('authDenied').hidden = st !== 'denied';
     if (st === 'loading') { title.textContent = 'Truck Stock'; lead.textContent = 'Loading'; }
-    else if (st === 'out') { title.textContent = 'Sign In'; lead.textContent = 'Reynolds Home Services Inventory Management System'; }
+    else if (st === 'out') { title.textContent = 'Sign in'; lead.textContent = 'Use the email and password you were given.'; }
     else if (st === 'denied') {
       title.textContent = 'Almost there';
       lead.textContent = 'Your account is not on the staff list yet. Send this ID to the person who manages the app and they will add you.';
@@ -511,7 +516,7 @@
     err.hidden = true; note.hidden = true;
     if (!email || !pass) { err.textContent = 'Enter your email and password.'; err.hidden = false; return; }
     var btn = $('authSubmit'); btn.disabled = true; btn.textContent = 'Signing in';
-    try { await fb.signIn(email, pass); $('a-pass').value = ''; }
+    try { await fb.signIn(email, pass, $('a-remember').checked); $('a-pass').value = ''; }
     catch (ex) { err.textContent = authMessage(ex); err.hidden = false; }
     btn.disabled = false; btn.textContent = 'Sign in';
   }
@@ -749,8 +754,11 @@
     var b = $('banner');
     var samples = allItems().filter(function (i) { return i.sample; }).length;
     if (!samples) { b.innerHTML = ''; return; }
-    
-    
+    b.innerHTML = '<div class="banner"><p><b>Sample stock is loaded</b> so you can see how it works. Change the counts to match your truck, or clear the samples and start fresh.</p><div class="acts">' +
+      (state.confirmClear
+        ? '<button class="btn sm danger" type="button" data-act="clear-yes">Remove ' + samples + ' samples</button><button class="btn sm" type="button" data-act="clear-no">Keep</button>'
+        : '<button class="btn sm" type="button" data-act="clear">Clear samples</button>') +
+      '</div></div>';
   }
 
   function renderHealth() {
@@ -810,7 +818,8 @@
 
   function emptyHtml() {
     if (!state.loaded) return '<div class="empty"><h2>Loading your stock</h2><p>One moment.</p></div>';
-    return 
+    return '<div class="empty"><h2>Nothing on the truck yet</h2><p>Add parts one at a time, or start from a typical service truck list and edit the counts to match yours.</p>' +
+      '<div class="acts"><button class="btn primary" type="button" data-act="starter">Load starter stock</button><button class="btn" type="button" data-act="add">Add an item</button></div></div>';
   }
 
   function renderStock() {
@@ -884,14 +893,23 @@
       : '<span class="avatar ph ' + (cls || '') + '">' + TRUCK_GLYPH + '</span>';
   }
   function resizePhoto(file) {
+    // Keeps the whole picture (no cropping) and keeps it small enough to store with the truck.
     return new Promise(function (resolve, reject) {
       var url = URL.createObjectURL(file), img = new Image();
       img.onload = function () {
-        var side = Math.min(img.width, img.height), size = 192, c = document.createElement('canvas');
-        c.width = c.height = size;
-        c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
         URL.revokeObjectURL(url);
-        resolve(c.toDataURL('image/jpeg', 0.85));
+        var longest = Math.max(img.width, img.height), size = Math.min(480, longest), out = '';
+        for (;;) {
+          var scale = size / longest;
+          var w = Math.max(1, Math.round(img.width * scale)), h = Math.max(1, Math.round(img.height * scale));
+          var c = document.createElement('canvas'); c.width = w; c.height = h;
+          var cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, w, h); cx.drawImage(img, 0, 0, w, h);
+          var q = 0.85; out = c.toDataURL('image/jpeg', q);
+          while (out.length > 50000 && q > 0.45) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
+          if (out.length <= 55000 || size <= 160) break;
+          size = Math.round(size * 0.75);
+        }
+        resolve(out);
       };
       img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('unreadable')); };
       img.src = url;
@@ -933,8 +951,8 @@
     } else {
       var need = 0, value = 0;
       list.forEach(function (t) { var s = truckStats(t.id); need += s.c.low + s.c.out; value += s.value; });
-      h = '<section class="fleet" aria-label="All trucks"><div><p class="kicker">Reynolds Home Services</p><p class="fleet-title">' + list.length + (list.length === 1 ? ' truck' : ' trucks') + '</p></div>' +
-        '<dl class="stats"><div><dt>Items That Need restocking</dt><dd>' + need + '</dd></div><div><dt>Total Stock value</dt><dd>' + money(value) + '</dd></div></dl></section>' +
+      h = '<section class="fleet" aria-label="All trucks"><div><p class="kicker">All trucks</p><p class="fleet-title">' + list.length + (list.length === 1 ? ' truck' : ' trucks') + '</p></div>' +
+        '<dl class="stats"><div><dt>Need restocking</dt><dd>' + need + '</dd></div><div><dt>Stock value</dt><dd>' + money(value) + '</dd></div></dl></section>' +
         '<div class="tgrid">' + list.map(truckCard).join('') +
         '<button class="tadd" type="button" data-act="add-truck"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Add truck</button></div>';
     }
