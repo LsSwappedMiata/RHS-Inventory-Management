@@ -50,7 +50,7 @@
   <main class="auth" id="authView">
     <div class="auth-card">
       <img src="reynolds_logo_hires_dc44f00b.png" width="96" height="96" alt="Reynolds Home Services">
-      <h2 id="authTitle">Truck Stock</h2>
+      <h2 id="authTitle">Reynolds Home Services Inventory Management System</h2>
       <p id="authLead">Loading</p>
       <form id="authForm" novalidate hidden>
         <div class="f"><label for="a-email">Email</label><input id="a-email" type="email" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false"></div>
@@ -497,7 +497,7 @@
     $('authForm').hidden = st !== 'out';
     $('authDenied').hidden = st !== 'denied';
     if (st === 'loading') { title.textContent = 'Truck Stock'; lead.textContent = 'Loading'; }
-    else if (st === 'out') { title.textContent = 'Sign in'; lead.textContent = 'Use the email and password you were given.'; }
+    else if (st === 'out') { title.textContent = 'Sign In'; lead.textContent = 'Reynolds Home Services Inventory Management System'; }
     else if (st === 'denied') {
       title.textContent = 'Almost there';
       lead.textContent = 'Your account is not on the staff list yet. Send this ID to the person who manages the app and they will add you.';
@@ -749,11 +749,8 @@
     var b = $('banner');
     var samples = allItems().filter(function (i) { return i.sample; }).length;
     if (!samples) { b.innerHTML = ''; return; }
-    b.innerHTML = '<div class="banner"><p><b>Sample stock is loaded</b> so you can see how it works. Change the counts to match your truck, or clear the samples and start fresh.</p><div class="acts">' +
-      (state.confirmClear
-        ? '<button class="btn sm danger" type="button" data-act="clear-yes">Remove ' + samples + ' samples</button><button class="btn sm" type="button" data-act="clear-no">Keep</button>'
-        : '<button class="btn sm" type="button" data-act="clear">Clear samples</button>') +
-      '</div></div>';
+    
+    
   }
 
   function renderHealth() {
@@ -813,8 +810,7 @@
 
   function emptyHtml() {
     if (!state.loaded) return '<div class="empty"><h2>Loading your stock</h2><p>One moment.</p></div>';
-    return '<div class="empty"><h2>Nothing on the truck yet</h2><p>Add parts one at a time, or start from a typical service truck list and edit the counts to match yours.</p>' +
-      '<div class="acts"><button class="btn primary" type="button" data-act="starter">Load starter stock</button><button class="btn" type="button" data-act="add">Add an item</button></div></div>';
+    return 
   }
 
   function renderStock() {
@@ -937,8 +933,8 @@
     } else {
       var need = 0, value = 0;
       list.forEach(function (t) { var s = truckStats(t.id); need += s.c.low + s.c.out; value += s.value; });
-      h = '<section class="fleet" aria-label="All trucks"><div><p class="kicker">All trucks</p><p class="fleet-title">' + list.length + (list.length === 1 ? ' truck' : ' trucks') + '</p></div>' +
-        '<dl class="stats"><div><dt>Need restocking</dt><dd>' + need + '</dd></div><div><dt>Stock value</dt><dd>' + money(value) + '</dd></div></dl></section>' +
+      h = '<section class="fleet" aria-label="All trucks"><div><p class="kicker">Reynolds Home Services</p><p class="fleet-title">' + list.length + (list.length === 1 ? ' truck' : ' trucks') + '</p></div>' +
+        '<dl class="stats"><div><dt>Items That Need restocking</dt><dd>' + need + '</dd></div><div><dt>Total Stock value</dt><dd>' + money(value) + '</dd></div></dl></section>' +
         '<div class="tgrid">' + list.map(truckCard).join('') +
         '<button class="tadd" type="button" data-act="add-truck"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Add truck</button></div>';
     }

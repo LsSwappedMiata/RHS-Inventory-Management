@@ -412,3 +412,12 @@ h1 { font-family: var(--font-display); font-weight: 700; font-size: 26px; letter
 .idrow { display: flex; gap: 8px; align-items: center; }
 .idrow code { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); font-family: var(--font-mono); font-size: 12.5px; color: var(--fg); overflow-wrap: anywhere; user-select: all; text-align: left; }
 @media (max-width: 560px) { .signout span { display: none; } .signout { padding: 0 11px; } }
+
+/* Phone header: keep button labels on one line and let the row wrap instead of overflowing */
+.btn { white-space: nowrap; flex: none; }
+.top-actions { flex-wrap: wrap; min-width: 0; max-width: 100%; }
+@media (max-width: 720px) {
+  .top { align-items: flex-start; }
+  .top-actions { width: 100%; }
+  .top-actions .btn:not(.signout) { flex: 1 1 auto; }
+}
