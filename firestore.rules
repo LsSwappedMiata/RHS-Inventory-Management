@@ -1,0 +1,49 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Anyone listed in the "staff" collection (document ID = their Firebase user UID)
+    // has full access to trucks and items. Everyone else gets nothing.
+    function isStaff() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/staff/$(request.auth.uid));
+    }
+
+    function validTruck() {
+      let d = request.resource.data;
+      return d.name is string && d.name.size() > 0 && d.name.size() <= 60
+        && d.get('photo', '') is string && d.get('photo', '').size() < 60000;
+    }
+
+    function validItem() {
+      let d = request.resource.data;
+      return d.name is string && d.name.size() > 0 && d.name.size() <= 80
+        && d.qty is number && d.qty >= 0
+        && d.truck is string;
+    }
+
+    match /trucks/{truckId} {
+      allow read: if isStaff();
+      allow create, update: if isStaff() && validTruck();
+      allow delete: if isStaff();
+    }
+
+    match /items/{itemId} {
+      allow read: if isStaff();
+      allow create, update: if isStaff() && validItem();
+      allow delete: if isStaff();
+    }
+
+    // A signed-in person may read only their own staff document. Nobody can write it from the app;
+    // you add and remove staff in the Firebase console.
+    match /staff/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -393,3 +393,22 @@ h1 { font-family: var(--font-display); font-weight: 700; font-size: 26px; letter
   .f.t { grid-column: span 2; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* Sign-in screen and sign out (added for Firebase) */
+.auth { display: flex; justify-content: center; padding: 32px 0 8px; }
+.auth-card {
+  width: min(400px, 100%); display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;
+  padding: 28px 24px; border-radius: 16px; background: var(--bg); color: var(--fg); border: 1px solid var(--line); box-shadow: var(--shadow);
+}
+.auth-card img { width: 96px; height: 96px; object-fit: contain; }
+.auth-card h2 { font-family: var(--font-display); font-size: 24px; font-weight: 600; letter-spacing: -.01em; }
+.auth-card p { color: var(--fg-2); font-size: 14px; }
+.auth-card form { width: 100%; display: flex; flex-direction: column; gap: 14px; text-align: left; margin-top: 4px; }
+.auth-card form .btn { width: 100%; height: 42px; }
+.auth-card form .linkbtn { align-self: center; }
+.auth-card .derr { text-align: left; }
+.auth-note { background: var(--ok-soft); color: var(--ok) !important; padding: 10px 12px; border-radius: 10px; font-weight: 500; }
+#authDenied { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.idrow { display: flex; gap: 8px; align-items: center; }
+.idrow code { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); font-family: var(--font-mono); font-size: 12.5px; color: var(--fg); overflow-wrap: anywhere; user-select: all; text-align: left; }
+@media (max-width: 560px) { .signout span { display: none; } .signout { padding: 0 11px; } }

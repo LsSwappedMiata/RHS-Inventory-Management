@@ -1,13 +1,19 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Truck Stock</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
 <div class="wrap">
-  <header class="top">
+  <header class="top" id="topbar" hidden>
     <div class="brand">
       <img src="reynolds_logo_hires_dc44f00b.png" width="120" height="120" alt="" aria-hidden="true">
       <button class="iconbtn back" id="backBtn" type="button" hidden aria-label="Back to all trucks">
@@ -35,8 +41,32 @@
       <button class="btn primary" id="addBtn" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Add item
       </button>
+      <button class="btn signout" id="signOutBtn" type="button" aria-label="Sign out">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9"></path></svg><span>Sign out</span>
+      </button>
     </div>
   </header>
+
+  <main class="auth" id="authView">
+    <div class="auth-card">
+      <img src="reynolds_logo_hires_dc44f00b.png" width="96" height="96" alt="Reynolds Home Services">
+      <h2 id="authTitle">Truck Stock</h2>
+      <p id="authLead">Loading</p>
+      <form id="authForm" novalidate hidden>
+        <div class="f"><label for="a-email">Email</label><input id="a-email" type="email" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false"></div>
+        <div class="f"><label for="a-pass">Password</label><input id="a-pass" type="password" autocomplete="current-password"></div>
+        <p class="derr" id="authErr" role="alert" hidden></p>
+        <p class="auth-note" id="authNote" role="status" hidden></p>
+        <button class="btn primary" id="authSubmit" type="submit">Sign in</button>
+        <button class="linkbtn" id="forgotBtn" type="button">Forgot your password?</button>
+      </form>
+      <div id="authDenied" hidden>
+        <p class="hint">Staff ID</p>
+        <div class="idrow"><code id="authUid"></code><button class="btn sm" type="button" id="copyUid">Copy</button></div>
+        <button class="btn" type="button" id="deniedOut">Sign out</button>
+      </div>
+    </div>
+  </main>
 
   <div class="stack" id="homeView" hidden></div>
 
@@ -169,8 +199,6 @@
   var CATS = ['Refrigerant', 'Electrical', 'Motors', 'Filters & Belts', 'Copper & Fittings', 'Controls', 'Consumables'];
   // Standard cylinder colors for common refrigerants
   var GAS = { 'R-410A': '#E7A3B8', 'R-22': '#9ED08B', 'R-134a': '#85C5E8', 'R-404A': '#EC9A4B', 'R-407C': '#B58A63', 'R-454B': '#C9D2DA' };
-  var KEY = 'truckstock:v1';
-  var KEY_T = 'truckstock:trucks:v1';
   var DEFAULT_TRUCK = 'truck-1';
 
   // Pick-list of common parts: name, category, unit, refrigerant, size examples
@@ -271,7 +299,7 @@
 
   var state = {
     items: new Map(), loaded: false, trucks: new Map(), trucksLoaded: false, truckId: null, tEdit: null, tDelete: false,
-    tPhoto: '', mode: 'loading', saving: false,
+    tPhoto: '', auth: 'loading', user: null, mode: 'loading', saving: false,
     view: 'stock', q: '', status: 'all', cat: 'all', sort: 'category',
     confirmClear: false, editingId: null, confirmDelete: false, copyText: ''
   };
@@ -342,58 +370,159 @@
       removeTruck: function (id) { return q('t:' + id, function () { return tcol.doc(id).delete(); }); }
     };
   }
-  function makeLocalBackend() {
-    function persist() {
-      try { localStorage.setItem(KEY, JSON.stringify(everyItem())); localStorage.setItem(KEY_T, JSON.stringify(Array.from(state.trucks.values()))); } catch (e) {}
+  /* ---------- firebase ---------- */
+  var FIREBASE_VERSION = '10.14.1';
+  var firebaseConfig = {
+    apiKey: "AIzaSyDpYe-eakkdy2WwHAhdvo-8ljj2C_MAx-g",
+    authDomain: "rhs-inventory-management-360b7.firebaseapp.com",
+    projectId: "rhs-inventory-management-360b7",
+    storageBucket: "rhs-inventory-management-360b7.firebasestorage.app",
+    messagingSenderId: "463816903220",
+    appId: "1:463816903220:web:b80c02b898ab24748f1861"
+  };
+  var fb = null, unsubs = [];
+
+  async function loadFirebase() {
+    var base = 'https://www.gstatic.com/firebasejs/' + FIREBASE_VERSION + '/';
+    var mods = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-firestore.js')]);
+    var App = mods[0], Auth = mods[1], Fs = mods[2];
+    var app = App.initializeApp(firebaseConfig);
+    var auth = Auth.getAuth(app), store;
+    try {
+      // Keeps working through dead spots: changes are saved on the device and sent when the connection returns.
+      store = Fs.initializeFirestore(app, { localCache: Fs.persistentLocalCache({ tabManager: Fs.persistentMultipleTabManager() }) });
+    } catch (e) { store = Fs.getFirestore(app); }
+    function writeFailed(err) {
+      if (window.console) console.error(err);
+      document.dispatchEvent(new CustomEvent('rhs-write-error'));
+    }
+    // Writes return at once. Firestore applies them locally right away and syncs them later.
+    function wrap(promise) { promise.catch(writeFailed); return Promise.resolve(); }
+    return {
+      onAuth: function (cb) { return Auth.onAuthStateChanged(auth, cb); },
+      signIn: function (email, pass) { return Auth.signInWithEmailAndPassword(auth, email, pass); },
+      signOut: function () { return Auth.signOut(auth); },
+      resetPassword: function (email) { return Auth.sendPasswordResetEmail(auth, email); },
+      collection: function (name) {
+        var col = Fs.collection(store, name);
+        return {
+          doc: function (id) {
+            var ref = Fs.doc(store, name, id);
+            return {
+              set: function (d) { return wrap(Fs.setDoc(ref, d)); },
+              update: function (d) { return wrap(Fs.updateDoc(ref, d)); },
+              delete: function () { return wrap(Fs.deleteDoc(ref)); }
+            };
+          },
+          onSnapshot: function (next, err) { return Fs.onSnapshot(col, { includeMetadataChanges: true }, next, err); }
+        };
+      }
+    };
+  }
+
+  /* ---------- storage backend ---------- */
+  function makeDbBackend(col, tcol) {
+    var chain = {};
+    function q(id, fn) {
+      chain[id] = (chain[id] || Promise.resolve()).catch(function () {}).then(fn);
+      return chain[id];
     }
     return {
-      set: function (id, data) { state.items.set(id, norm(id, data)); persist(); render(); return Promise.resolve(); },
-      setQty: function (id, qty) {
-        var it = state.items.get(id);
-        if (it) { it.qty = qty; it.updatedAt = Date.now(); persist(); render(); }
-        return Promise.resolve();
-      },
-      remove: function (id) { state.items.delete(id); persist(); render(); return Promise.resolve(); },
-      setTruck: function (id, data) { state.trucks.set(id, normTruck(id, data)); persist(); render(); return Promise.resolve(); },
-      removeTruck: function (id) { state.trucks.delete(id); persist(); render(); return Promise.resolve(); }
+      set: function (id, data) { return q(id, function () { return col.doc(id).set(data); }); },
+      setQty: function (id, qty) { return q(id, function () { return col.doc(id).update({ qty: qty, updatedAt: Date.now() }); }); },
+      remove: function (id) { return q(id, function () { return col.doc(id).delete(); }); },
+      setTruck: function (id, data) { return q('t:' + id, function () { return tcol.doc(id).set(data); }); },
+      removeTruck: function (id) { return q('t:' + id, function () { return tcol.doc(id).delete(); }); }
     };
+  }
+
+  function stopData() {
+    unsubs.forEach(function (u) { try { u(); } catch (e) {} });
+    unsubs = []; backend = null;
+    pending.forEach(function (p) { clearTimeout(p.timer); }); pending.clear();
+    state.items = new Map(); state.trucks = new Map(); state.loaded = false; state.trucksLoaded = false;
+    state.truckId = null; state.saving = false;
+  }
+  function startData() {
+    stopData();
+    var col = fb.collection('items'), tcol = fb.collection('trucks');
+    backend = makeDbBackend(col, tcol);
+    state.mode = navigator.onLine === false ? 'offline' : 'synced';
+    function onErr(e) {
+      if (e && e.code === 'permission-denied') state.auth = 'denied';
+      else state.mode = 'offline';
+      state.loaded = true; state.trucksLoaded = true; render();
+    }
+    unsubs.push(col.onSnapshot(function (snap) {
+      var m = new Map();
+      snap.docs.forEach(function (d) { m.set(d.id, norm(d.id, d.data() || {})); });
+      state.items = m; state.loaded = true;
+      state.saving = !!(snap.metadata && snap.metadata.hasPendingWrites);
+      if (navigator.onLine !== false) state.mode = 'synced';
+      render();
+    }, onErr));
+    unsubs.push(tcol.onSnapshot(function (snap) {
+      var tm = new Map();
+      snap.docs.forEach(function (d) { tm.set(d.id, normTruck(d.id, d.data() || {})); });
+      state.trucks = tm; state.trucksLoaded = true; render();
+    }, onErr));
   }
 
   async function boot() {
     render();
-    var db = null;
-    try { db = (window.claude && window.claude.use) ? await window.claude.use('db') : null; } catch (e) { db = null; }
-    if (db) {
-      var col = db.collection('items');
-      var tcol = db.collection('trucks');
-      backend = makeDbBackend(col, tcol);
-      state.mode = 'synced';
-      col.onSnapshot(function (snap) {
-        var m = new Map();
-        snap.docs.forEach(function (d) { m.set(d.id, norm(d.id, d.data() || {})); });
-        state.items = m; state.loaded = true;
-        state.saving = !!(snap.metadata && snap.metadata.hasPendingWrites);
-        state.mode = 'synced';
-        render();
-      }, function () { state.mode = 'offline'; state.loaded = true; render(); });
-      tcol.onSnapshot(function (snap) {
-        var tm = new Map();
-        snap.docs.forEach(function (d) { tm.set(d.id, normTruck(d.id, d.data() || {})); });
-        state.trucks = tm; state.trucksLoaded = true; render();
-      }, function () { state.trucksLoaded = true; render(); });
-    } else {
-      backend = makeLocalBackend();
-      state.mode = 'local';
-      try {
-        var raw = JSON.parse(localStorage.getItem(KEY) || '[]');
-        raw.forEach(function (d) { state.items.set(d.id, norm(d.id, d)); });
-      } catch (e) {}
-      try {
-        JSON.parse(localStorage.getItem(KEY_T) || '[]').forEach(function (d) { state.trucks.set(d.id, normTruck(d.id, d)); });
-      } catch (e) {}
-      state.loaded = true; state.trucksLoaded = true;
+    try { fb = await loadFirebase(); }
+    catch (e) { if (window.console) console.error(e); state.auth = 'error'; render(); return; }
+    fb.onAuth(function (user) {
+      if (user) { state.user = { uid: user.uid, email: user.email || '' }; state.auth = 'in'; startData(); }
+      else { state.user = null; state.auth = 'out'; stopData(); }
       render();
+    });
+    window.addEventListener('online', function () { if (state.auth === 'in') { state.mode = 'synced'; render(); } });
+    window.addEventListener('offline', function () { if (state.auth === 'in') { state.mode = 'offline'; render(); } });
+    document.addEventListener('rhs-write-error', failed);
+  }
+
+  /* ---------- sign in ---------- */
+  function authMessage(err) {
+    var c = err && err.code;
+    if (c === 'auth/invalid-email') return 'That email address does not look right.';
+    if (c === 'auth/too-many-requests') return 'Too many tries. Wait a few minutes, or use Forgot your password.';
+    if (c === 'auth/network-request-failed') return 'Could not reach the server. Check your connection and try again.';
+    if (c === 'auth/user-disabled') return 'This account has been turned off. Ask the person who manages the app.';
+    return 'That email and password do not match. Check them and try again.';
+  }
+  function renderAuth() {
+    var st = state.auth;
+    var title = $('authTitle'), lead = $('authLead');
+    $('authForm').hidden = st !== 'out';
+    $('authDenied').hidden = st !== 'denied';
+    if (st === 'loading') { title.textContent = 'Truck Stock'; lead.textContent = 'Loading'; }
+    else if (st === 'out') { title.textContent = 'Sign in'; lead.textContent = 'Use the email and password you were given.'; }
+    else if (st === 'denied') {
+      title.textContent = 'Almost there';
+      lead.textContent = 'Your account is not on the staff list yet. Send this ID to the person who manages the app and they will add you.';
+      $('authUid').textContent = state.user ? state.user.uid : '';
+    } else { title.textContent = 'Could not load'; lead.textContent = 'The sign-in service did not load. Check your connection and reload the page.'; }
+  }
+  async function doSignIn(e) {
+    e.preventDefault();
+    var email = $('a-email').value.trim(), pass = $('a-pass').value;
+    var err = $('authErr'), note = $('authNote');
+    err.hidden = true; note.hidden = true;
+    if (!email || !pass) { err.textContent = 'Enter your email and password.'; err.hidden = false; return; }
+    var btn = $('authSubmit'); btn.disabled = true; btn.textContent = 'Signing in';
+    try { await fb.signIn(email, pass); $('a-pass').value = ''; }
+    catch (ex) { err.textContent = authMessage(ex); err.hidden = false; }
+    btn.disabled = false; btn.textContent = 'Sign in';
+  }
+  async function doReset() {
+    var email = $('a-email').value.trim(), err = $('authErr'), note = $('authNote');
+    err.hidden = true; note.hidden = true;
+    if (!email) { err.textContent = 'Enter your email above first, then tap Forgot your password.'; err.hidden = false; return; }
+    try { await fb.resetPassword(email); } catch (ex) {
+      if (ex && (ex.code === 'auth/invalid-email' || ex.code === 'auth/network-request-failed')) { err.textContent = authMessage(ex); err.hidden = false; return; }
     }
+    note.textContent = 'If that email has an account, a reset link is on its way. Check your inbox and spam.'; note.hidden = false;
   }
 
   /* ---------- actions ---------- */
@@ -611,9 +740,9 @@
 
   function renderSync() {
     var s = $('sync'); s.setAttribute('data-mode', state.mode);
-    var t = { loading: 'Loading', synced: state.saving ? 'Saving' : 'Synced', local: 'This device only', offline: 'Offline' }[state.mode];
+    var t = { loading: 'Loading', synced: state.saving ? 'Saving' : 'Synced', offline: 'Offline' }[state.mode];
     $('syncText').textContent = t;
-    s.title = state.mode === 'local' ? 'Sign in to Claude to keep this inventory across devices.' : '';
+    s.title = state.mode === 'offline' ? 'No connection. Changes are saved on this device and will sync when you are back online.' : '';
   }
 
   function renderBanner() {
@@ -897,6 +1026,9 @@
 
   function render() {
     renderSync();
+    var authed = state.auth === 'in';
+    $('topbar').hidden = !authed; $('authView').hidden = authed;
+    if (!authed) { $('homeView').hidden = true; $('truckView').hidden = true; renderAuth(); return; }
     var home = !state.truckId;
     $('homeView').hidden = !home; $('truckView').hidden = home;
     $('backBtn').hidden = home; $('editTruckBtn').hidden = home; $('dataBtn').hidden = home; $('addBtn').hidden = home; $('addTruckBtn').hidden = !home;
@@ -980,6 +1112,15 @@
     state.status = b.getAttribute('data-status'); syncSeg(); render();
   });
   $('addBtn').addEventListener('click', function () { openSheet(); });
+  $('authForm').addEventListener('submit', doSignIn);
+  $('forgotBtn').addEventListener('click', doReset);
+  $('signOutBtn').addEventListener('click', function () { if (fb) fb.signOut(); });
+  $('deniedOut').addEventListener('click', function () { if (fb) fb.signOut(); });
+  $('copyUid').addEventListener('click', async function () {
+    var id = $('authUid').textContent;
+    try { await navigator.clipboard.writeText(id); toast('Copied'); }
+    catch (e) { var r = document.createRange(); r.selectNodeContents($('authUid')); var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); toast('Select and copy the ID'); }
+  });
   $('backBtn').addEventListener('click', goHome);
   $('addTruckBtn').addEventListener('click', function () { openTruckSheet(); });
   $('editTruckBtn').addEventListener('click', function () { openTruckSheet(state.truckId); });
